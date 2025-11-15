@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Badminton Pair-UP</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="responsive-container">
+    <div id="page1">
+      <div class="container">
+        <h1>Kari Scheduler</h1>
+        <div class="card"><button onclick="showImportModal()">Import All Players</button></div>
+        <div id="importModal">
+          <div class="modal-content">
+            <textarea id="players-textarea" rows="15" placeholder="Name,Gender&#10;Kari,Male&#10;Bhavani,Female"></textarea>
+            <div class="gender-select">
+              <label><input type="radio" name="genderSelect" value="Male" checked> Male</label>
+              <label><input type="radio" name="genderSelect" value="Female"> Female</label>
+            </div>
+            <div class="modal-buttons">
+              <button class="ok-btn" onclick="addPlayersFromText()">OK</button>
+              <button class="cancel-btn" onclick="hideImportModal()">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <input type="text" id="player-name" placeholder="Enter Player Name">
+          <select id="player-gender"><option value="Male">Male</option><option value="Female">Female</option></select>
+          <button onclick="addPlayer()">Add Player</button>
+        </div>
+        <div class="card"><table id="player-list-table"></table></div>
+        <div class="card">
+          <h3>Set Fixed Pairs (Optional)</h3>
+          <select id="fixed-pair-1"></select>
+          <select id="fixed-pair-2"></select>
+          <button onclick="addFixedPair()">Add Fixed Pair</button>
+          <div id="fixed-pair-list" class="fixed-pairs-list"></div>
+        </div>
+        <div class="card"><input type="number" id="num-courts" placeholder="Enter Number of Courts" min="1"></div>
+        <div class="card-col">
+          <button id="resetRoundsBtn" class="main-action" onclick="resetRounds()">New Rounds ➡️</button>
+          <button id="goToRoundsBtn" class="main-action" onclick="goToRounds()">Continue ➡️</button>
+        </div>
+      </div>
+    </div>
+    <div id="page2" style="display:none;">
+      <button class="main-action2" onclick="goBack()">Back to Input</button>
+      <div id="game-results"></div>
+      <div class="round-navigation">
+        <button id="prevBtn" onclick="prevRound()" disabled>Prev Round</button>
+        <div id="roundTitle">R</div>
+        <button id="nextBtn" onclick="nextRound()" disabled>Next Round</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
