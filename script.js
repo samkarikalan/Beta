@@ -1102,7 +1102,7 @@ function backupSchedulerState() {
 function goBack() {
   // const pin = prompt("Enter 4-digit code to go back:");
   //if (pin === "0000") {
-  backupSchedulerState()
+  
   document.getElementById('page1').style.display = 'block';
   document.getElementById('page2').style.display = 'none';
   isOnPage2 = false;
@@ -1111,6 +1111,7 @@ function goBack() {
   //} else if (pin !== null) alert("Incorrect PIN!");
 }
 function nextRound() {
+  backupSchedulerState();
   if (currentRoundIndex + 1 < allRounds.length) {
     currentRoundIndex++;
     showRound(currentRoundIndex);
