@@ -391,85 +391,66 @@ function AischedulerNextRound() {
   } = schedulerState;
   
   const totalPlayers = players.length;
-  const numPlayersPerRound = numCourts * 4;
-  let numResting = Math.max(totalPlayers - numPlayersPerRound, 0);
-  schedulerState.roundIndex = (schedulerState.roundIndex || 0) + 1;
-  const roundIdx = schedulerState.roundIndex;
-  const totalPossiblePairs = (players.length * (players.length - 1)) / 2;
-  
-  if (pairPlayedSet.size >= totalPossiblePairs) {
-    pairPlayedSet.clear();
-    playedTogether.clear();
+const numPlayersPerRound = numCourts * 4;
+let numResting = Math.max(totalPlayers - numPlayersPerRound, 0);
+schedulerState.roundIndex = (schedulerState.roundIndex || 0) + 1;
+const roundIdx = schedulerState.roundIndex;
+const totalPossiblePairs = (players.length * (players.length - 1)) / 2;
+
+if (pairPlayedSet.size >= totalPossiblePairs) {
+  pairPlayedSet.clear();
+  playedTogether.clear();
+}
+
+// Separate fixed pairs and free players
+const fixedPairPlayers = new Set(fixedPairs.flat());
+let freePlayers = players.filter(p => !fixedPairPlayers.has(p));
+
+let resting = [];
+let playing = [];
+
+if (fixedPairs.length > 0 && numResting >= 2) {
+  // Convert fixedPairs to atomic pairs
+  const fixedPairsList = fixedPairs.map(([a, b]) => [a, b]);
+
+  // Build candidate units: fixed pairs + free players as singles
+  let possiblePlayers = [
+    ...fixedPairsList,
+    ...freePlayers.map(p => [p])
+  ];
+
+  // Sort units by rest count (sum for pairs, individual for singles)
+  possiblePlayers.sort((u1, u2) => {
+    const count1 = u1.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    const count2 = u2.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    return count1 - count2;
+  });
+
+  // Pick resting players without splitting pairs
+  for (const unit of possiblePlayers) {
+    if (resting.length + unit.length <= numResting) {
+      resting.push(...unit);
+    }
+    if (resting.length >= numResting) break;
   }
-  const fixedPairPlayers = new Set(fixedPairs.flat());
-  let freePlayers = players.filter(p => !fixedPairPlayers.has(p));
-  let resting = [];
-  let playing = [];
-  if (fixedPairPlayers.size > 0 && numResting > 1) {
-    // Example threshold: prioritize fixed pairs if there are at least as many as free players
-    let possiblePlayers;
 
-    // Convert fixedPairs set into list of pairs
-    const fixedPairsList = fixedPairs.map(([a, b]) => [a, b]);
+  // Select playing players
+  playing = players.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
 
-    // Convert to array of singles (players not in any fixed pair)
-    const singles = players.filter(p => !fixedPairPlayers.has(p));
+  // Optional: keep fixed pairs together in playing
+  const playingPairs = fixedPairsList.filter(([a,b]) => playing.includes(a) && playing.includes(b));
+  const playingSingles = playing.filter(p => !fixedPairPlayers.has(p));
+  playing = [...playingPairs.flat(), ...playingSingles];
 
-    // Decide order: prioritize fixed pairs or free players
-    if (fixedPairPlayers.size >= freePlayers.length) {
-      // Fixed pairs first, then singles
-      possiblePlayers = [...fixedPairsList.flat(), ...singles];
-    } else {
-      // Singles first, then fixed pairs
-      possiblePlayers = [...singles, ...fixedPairsList.flat()];
-    }
+} else {
+  // No fixed pairs or resting slots < 2
+  let sortedPlayers = [...players].sort((a, b) =>
+    (restCount.get(a) || 0) - (restCount.get(b) || 0)
+  );
+  resting = sortedPlayers.slice(0, numResting);
+  playing = players.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
+}
 
-    // 1. Sort possiblePlayers by rest count
-    let sortedPlayers = [...possiblePlayers].sort((a, b) => (restCount.get(a) || 0) - (restCount.get(b) || 0));
-    // 2. Select resting players (never split a fixed pair)
-    let i = 0;
-    while (resting.length < numResting && i < sortedPlayers.length) {
-      let p = sortedPlayers[i];
-      if (fixedMap.has(p)) {
-        let partner = fixedMap.get(p);
-        if (!resting.includes(partner)) {
-          // Only add both if slots allow and partner is in possiblePlayers
-          if (resting.length <= numResting - 2 && possiblePlayers.includes(partner)) {
-            resting.push(p, partner);
-          }
-          // else skip both
-        }
-      } else {
-        resting.push(p);
-      }
-      i++;
-    }
-    // 3. Final playing list (everyone else)
-    playing = players.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
-    // 4. Ensure no fixed pair is split between rest and play
-    for (const p of playing) {
-      if (fixedMap.has(p)) {
-        const partner = fixedMap.get(p);
-        if (resting.includes(partner)) {
-          // Remove both from resting, add both to playing
-          resting = resting.filter(x => x !== partner && x !== p);
-          playing.push(partner);
-          playing.push(p);
-        }
-      }
-    }
-    // Remove duplicates from playing, limit to numPlayersPerRound
-    playing = [...new Set(playing)].slice(0, numPlayersPerRound);
-  } else {
-    // ⚖️ Sort players by how often they've rested (low first)
-    let sortedPlayers = [...players].sort((a, b) =>
-      (restCount.get(a) || 0) - (restCount.get(b) || 0)
-    );
-    // 💤 Select players to rest
-    resting = sortedPlayers.slice(0, numResting);
-    // 🎾 Remaining players play
-    playing = players.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
-  }
   // 5️⃣ Prepare pairs
   const playingSet = new Set(playing);
   let fixedPairsThisRound = [];
