@@ -200,20 +200,9 @@ function onNumberTouch(e) {
 
   const table = document.getElementById("player-list-table");
 
-  // Swap rows
-  const sourceNext = sourceRow.nextSibling;
-  const targetNext = targetRow.nextSibling;
-
-  if (sourceNext === targetRow) {
-    // source directly above target
-    table.insertBefore(targetRow, sourceRow);
-  } else if (targetNext === sourceRow) {
-    // target directly above source
-    table.insertBefore(sourceRow, targetRow);
-  } else {
-    table.insertBefore(sourceRow, targetNext);
-    table.insertBefore(targetRow, sourceNext);
-  }
+  // Move source row AFTER target row
+  const nextSibling = targetRow.nextSibling;
+  table.insertBefore(sourceRow, nextSibling);
 
   // Clear selection
   selectedNoCell.classList.remove("selected-no");
