@@ -294,7 +294,25 @@ h1 {
   min-width: 12.125rem;
   transition: background 0.3s, transform 0.2s;
 }
-.main-action {
+.main-action1 {
+  display: block;
+  width: 100%;
+  background: rgb(0, 255, 55);
+  color: black;
+  font-size: 1.25rem; /* 20px */
+  font-weight: bold;
+  padding: 0.5rem; /* 8px */
+  border-radius: 0.9375rem; /* 15px */
+  margin-top: 0.5rem;
+  cursor: pointer;
+  border: none;
+  transition: background 0.3s, transform 0.2s;
+}
+.main-action1:hover {
+   background: rgb(0, 255, 55);
+  transform: scale(1.05);
+}
+.main-action3 {
   display: block;
   width: 100%;
   background: orange;
@@ -308,7 +326,7 @@ h1 {
   border: none;
   transition: background 0.3s, transform 0.2s;
 }
-.main-action:hover {
+.main-action3:hover {
   background: #ffb84d;
   transform: scale(1.05);
 }
