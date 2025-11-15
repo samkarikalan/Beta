@@ -408,13 +408,22 @@ function AischedulerNextRound() {
   if (fixedPairPlayers.size > 0 && numResting > 1) {
     // Example threshold: prioritize fixed pairs if there are at least as many as free players
     let possiblePlayers;
+
+    // Convert fixedPairs set into list of pairs
+    const fixedPairsList = fixedPairs.map(([a, b]) => [a, b]);
+
+    // Convert to array of singles (players not in any fixed pair)
+    const singles = players.filter(p => !fixedPairPlayers.has(p));
+
+    // Decide order: prioritize fixed pairs or free players
     if (fixedPairPlayers.size >= freePlayers.length) {
-      // Prioritize fixed pair players, then free players
-      possiblePlayers = [...fixedPairPlayers, ...freePlayers];
+      // Fixed pairs first, then singles
+      possiblePlayers = [...fixedPairsList.flat(), ...singles];
     } else {
-      // Prioritize free players, then fixed pair players
-      possiblePlayers = [...freePlayers, ...fixedPairPlayers];
+      // Singles first, then fixed pairs
+      possiblePlayers = [...singles, ...fixedPairsList.flat()];
     }
+
     // 1. Sort possiblePlayers by rest count
     let sortedPlayers = [...possiblePlayers].sort((a, b) => (restCount.get(a) || 0) - (restCount.get(b) || 0));
     // 2. Select resting players (never split a fixed pair)
