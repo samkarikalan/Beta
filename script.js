@@ -210,6 +210,7 @@ function onNumberTouch(e) {
 
   // Update No. column
   updateNumbers();
+  syncPlayersFromTable();
 }
 
 
@@ -218,6 +219,32 @@ function updateNumbers() {
   Array.from(table.querySelectorAll(".no-col")).forEach((cell, idx) => {
     cell.textContent = idx + 1;
   });
+}
+
+function syncPlayersFromTable() {
+  const table = document.getElementById('player-list-table');
+  const rows = table.querySelectorAll('tr');
+
+  const updated = [];
+
+  rows.forEach((row, index) => {
+    if (index === 0) return; // skip header
+
+    const nameCell = row.querySelector('.player-name');
+    const genderCell = row.querySelector('.player-gender');
+
+    if (!nameCell || !genderCell) return;
+
+    updated.push({
+      name: nameCell.textContent.trim(),
+      gender: genderCell.textContent.trim(),
+      active: !row.classList.contains('inactive-row')
+    });
+  });
+
+  // Update your global arrays
+  allPlayers = updated;
+  players = allPlayers.filter(p => p.active);
 }
 
 
