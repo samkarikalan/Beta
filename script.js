@@ -357,7 +357,81 @@ function shuffle(array) {
   }
   return array;
 }
+
 function findDisjointPairs(playing, usedPairsSet, requiredPairsCount) {
+  const allPairs = [];
+  const unusedPairs = [];
+  const usedPairs = [];
+
+  // 1. Generate all pairs
+  for (let i = 0; i < playing.length; i++) {
+    for (let j = i + 1; j < playing.length; j++) {
+      const a = playing[i], b = playing[j];
+      const key = [a,b].slice().sort().join("&");
+      const isNew = !usedPairsSet || !usedPairsSet.has(key);
+      const pairObj = { a, b, key, isNew };
+      allPairs.push(pairObj);
+      if (isNew) unusedPairs.push(pairObj);
+      else usedPairs.push(pairObj);
+    }
+  }
+
+  // 2. Backtracking with newness score
+  function backtrack(candidates) {
+    let bestSolution = null;
+    let bestScore = -1;
+    const result = [];
+    const usedPlayers = new Set();
+
+    function dfs(start, scoreSum) {
+      if (result.length === requiredPairsCount) {
+        if (scoreSum > bestScore) {
+          bestScore = scoreSum;
+          bestSolution = result.slice();
+        }
+        return;
+      }
+      for (let i = start; i < candidates.length; i++) {
+        const { a, b, isNew } = candidates[i];
+        if (usedPlayers.has(a) || usedPlayers.has(b)) continue;
+
+        usedPlayers.add(a);
+        usedPlayers.add(b);
+        result.push([a,b]);
+
+        dfs(i+1, scoreSum + (isNew ? 1 : 0)); // newness score increment
+
+        result.pop();
+        usedPlayers.delete(a);
+        usedPlayers.delete(b);
+      }
+    }
+
+    dfs(0,0);
+    return bestSolution;
+  }
+
+  // 3. Fallback logic preserved, just call backtrack on each set
+  if (unusedPairs.length >= requiredPairsCount) {
+    const res = backtrack(unusedPairs);
+    if (res && res.length === requiredPairsCount) return res;
+  }
+
+  const combined = [...unusedPairs, ...usedPairs];
+  if (combined.length >= requiredPairsCount) {
+    const res = backtrack(combined);
+    if (res && res.length === requiredPairsCount) return res;
+  }
+
+  if (allPairs.length >= requiredPairsCount) {
+    const res = backtrack(allPairs);
+    if (res && res.length === requiredPairsCount) return res;
+  }
+
+  return [];
+}
+
+function findDisjointPairs2(playing, usedPairsSet, requiredPairsCount) {
   const allPairs = [];
   const unusedPairs = [];
   const usedPairs = [];
@@ -370,7 +444,7 @@ function findDisjointPairs(playing, usedPairsSet, requiredPairsCount) {
       else usedPairs.push({ a, b, key });
     }
   }
-  function backtrack(candidates) {
+  function backtrack2(candidates) {
     const result = [];
     const usedPlayers = new Set();
     function dfs(start) {
