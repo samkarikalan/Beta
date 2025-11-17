@@ -928,33 +928,42 @@ function showRound(index) {
   document.getElementById('nextBtn').disabled = false;
 }
 
-function showRoundold(index) {
+function showRound(index) {
   const resultsDiv = document.getElementById('game-results');
-  resultsDiv.innerHTML = '';
+
+  // 🔥 FIX: remove all DOM nodes and event listeners to prevent ghost players
+  while (resultsDiv.firstChild) resultsDiv.firstChild.remove();
+
   const data = allRounds[index];
   if (!data) return;
-  // ✅ Update round title
+
+  // Update round title
   const roundTitle = document.getElementById("roundTitle");
   roundTitle.className = "round-title";
   roundTitle.innerText = data.round;
-  // ✅ Create sections safely
+
+  // Create sections safely
   let restDiv = null;
   if (data.resting && data.resting.length !== 0) {
     restDiv = renderRestingPlayers(data, index);
   }
   const gamesDiv = renderGames(data, index);
-  // ✅ Wrap everything in a container to distinguish latest vs played
+
+  // Wrap everything in a container to distinguish latest vs played
   const wrapper = document.createElement('div');
   const isLatest = index === allRounds.length - 1;
   wrapper.className = isLatest ? 'latest-round' : 'played-round';
-  // ✅ Append conditionally
+
+  // Append conditionally
   if (restDiv) {
     wrapper.append(restDiv, gamesDiv);
   } else {
     wrapper.append(gamesDiv);
   }
+
   resultsDiv.append(wrapper);
-  // ✅ Navigation buttons
+
+  // Navigation buttons
   document.getElementById('prevBtn').disabled = index === 0;
   document.getElementById('nextBtn').disabled = false;
 }
@@ -979,66 +988,73 @@ function renderRestingPlayers(data, index) {
   restDiv.appendChild(restBox);
   return restDiv;
 }
+
 function renderGames(data, index) {
+  // wrapper for this round
   const wrapper = document.createElement('div');
+
+  // loop over games
   data.games.forEach((game, gameIndex) => {
-    // 🟦 Create the main container for the match
     const teamsDiv = document.createElement('div');
     teamsDiv.className = 'teams';
-    // Helper → Team letters (A, B, C, D...)
-    const getTeamLetter = (gameIndex, teamSide) => {
-      const teamNumber = gameIndex * 2 + (teamSide === 'L' ? 0 : 1);
-      return String.fromCharCode(65 + teamNumber);
-    };
+
     const makeTeamDiv = (teamSide) => {
       const teamDiv = document.createElement('div');
       teamDiv.className = 'team';
       teamDiv.dataset.teamSide = teamSide;
       teamDiv.dataset.gameIndex = gameIndex;
-      // 🔁 Swap icon
+
+      // swap icon
       const swapIcon = document.createElement('div');
       swapIcon.className = 'swap-icon';
       swapIcon.innerHTML = '🔁';
       teamDiv.appendChild(swapIcon);
-      // 👥 Add player buttons
+
+      // player buttons
       const teamPairs = teamSide === 'L' ? game.pair1 : game.pair2;
       teamPairs.forEach((p, i) => {
-        teamDiv.appendChild(makePlayerButton(p, teamSide, gameIndex, i, data, index));
+        // ✅ pass index, but NOT the clone data
+        teamDiv.appendChild(makePlayerButton(p, teamSide, gameIndex, i, null, index));
       });
-      // ✅ Swap logic (only for latest round)
+
+      // swap logic for latest round
       const isLatestRound = index === allRounds.length - 1;
       if (isLatestRound) {
         swapIcon.addEventListener('click', (e) => {
           e.stopPropagation();
           e.preventDefault();
+
           if (window.selectedTeam) {
             const src = window.selectedTeam;
             if (src.gameIndex !== gameIndex) {
-              handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, data, index);
+              // 🔥 IMPORTANT: use real allRounds[index] here
+              handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, index);
+              window.selectedTeam = null;
+              document.querySelectorAll('.selected-team').forEach(b => b.classList.remove('selected-team'));
+              showRound(index); // re-render live data
             }
-            window.selectedTeam = null;
-            document
-              .querySelectorAll('.selected-team')
-              .forEach(b => b.classList.remove('selected-team'));
           } else {
             window.selectedTeam = { teamSide, gameIndex };
             teamDiv.classList.add('selected-team');
           }
         });
       }
+
       return teamDiv;
     };
-    // 🟢 Create left & right sides
+
+    // left & right teams
     const team1 = makeTeamDiv('L');
     const team2 = makeTeamDiv('R');
-    // ⚪ VS label
+
     const vs = document.createElement('span');
     vs.className = 'vs';
     vs.innerText = 'VS';
-    // Add everything to container
+
     teamsDiv.append(team1, vs, team2);
     wrapper.appendChild(teamsDiv);
   });
+
   return wrapper;
 }
 // Games display
