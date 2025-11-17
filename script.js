@@ -1089,7 +1089,59 @@ function handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index
   fromTeam[fromPlayerIndex] = targetPlayer && targetPlayer !== '(Empty)' ? targetPlayer : '(Empty)';
   showRound(index);
 }
+
+// Add a global flag to prevent concurrent swaps
+let swapInProgress = false;
+const swapQueue = [];
+
 function handleTeamSwapAcrossCourts(src, target, data, index) {
+  if (!src || !target) return;
+  if (src.gameIndex === target.gameIndex && src.teamSide === target.teamSide) return;
+
+  // Queue the swap if another is in progress
+  if (swapInProgress) {
+    swapQueue.push({ src, target, data, index });
+    return;
+  }
+
+  swapInProgress = true;
+
+  const srcKey = src.teamSide === 'L' ? 'pair1' : 'pair2';
+  const targetKey = target.teamSide === 'L' ? 'pair1' : 'pair2';
+
+  // Fetch teams immediately before swapping
+  const srcTeam = data.games[src.gameIndex][srcKey];
+  const targetTeam = data.games[target.gameIndex][targetKey];
+
+  // Animation highlight
+  const srcDiv = document.querySelector(`.team[data-game-index="${src.gameIndex}"][data-team-side="${src.teamSide}"]`);
+  const targetDiv = document.querySelector(`.team[data-game-index="${target.gameIndex}"][data-team-side="${target.teamSide}"]`);
+  [srcDiv, targetDiv].forEach(div => {
+    div.classList.add('swapping');
+    setTimeout(() => div.classList.remove('swapping'), 600);
+  });
+
+  setTimeout(() => {
+    // Swap teams safely using temporary variable
+    const temp = data.games[src.gameIndex][srcKey];
+    data.games[src.gameIndex][srcKey] = data.games[target.gameIndex][targetKey];
+    data.games[target.gameIndex][targetKey] = temp;
+
+    // Refresh the round
+    showRound(index);
+
+    swapInProgress = false;
+
+    // Process next swap in queue if any
+    if (swapQueue.length > 0) {
+      const nextSwap = swapQueue.shift();
+      handleTeamSwapAcrossCourts(nextSwap.src, nextSwap.target, nextSwap.data, nextSwap.index);
+    }
+  }, 300);
+}
+
+
+function handleTeamSwapAcrossCourts2(src, target, data, index) {
   if (!src || !target) return;
   if (src.gameIndex === target.gameIndex && src.teamSide === target.teamSide) return;
   const srcKey = src.teamSide === 'L' ? 'pair1' : 'pair2';
