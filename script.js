@@ -886,6 +886,49 @@ DISPLAY & UI FUNCTIONS
 ========================= */
 // Main round display
 function showRound(index) {
+  // 🔄 Reset all temporary UI state
+  window.selectedTeam = null;
+  window.selectedPlayer = null;
+
+  // 🔄 Clear old UI completely (no stale DOM / no leftover listeners)
+  const resultsDiv = document.getElementById('game-results');
+  resultsDiv.replaceChildren();
+
+  // 🛑 Read the true round data
+  const originalData = allRounds[index];
+  if (!originalData) return;
+
+  // 📌 Use a CLONE for rendering to avoid mutation corruption
+  const data = structuredClone(originalData);
+
+  // 🔤 Update round title
+  const roundTitle = document.getElementById("roundTitle");
+  roundTitle.className = "round-title";
+  roundTitle.innerText = data.round;
+
+  // 🧩 Build UI sections
+  let restDiv = null;
+  if (data.resting && data.resting.length !== 0) {
+    restDiv = renderRestingPlayers(data, index);
+  }
+  const gamesDiv = renderGames(data, index);
+
+  // 🎁 Wrap
+  const wrapper = document.createElement('div');
+  const isLatest = index === allRounds.length - 1;
+  wrapper.className = isLatest ? 'latest-round' : 'played-round';
+
+  if (restDiv) wrapper.append(restDiv, gamesDiv);
+  else wrapper.append(gamesDiv);
+
+  resultsDiv.append(wrapper);
+
+  // ⏮ Navigation
+  document.getElementById('prevBtn').disabled = index === 0;
+  document.getElementById('nextBtn').disabled = false;
+}
+
+function showRoundold(index) {
   const resultsDiv = document.getElementById('game-results');
   resultsDiv.innerHTML = '';
   const data = allRounds[index];
