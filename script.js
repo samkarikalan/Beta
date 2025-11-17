@@ -358,7 +358,127 @@ function shuffle(array) {
   return array;
 }
 
-function findDisjointPairs(playing, usedPairsSet, requiredPairsCount) {
+function findDisjointPairs(playing, usedPairsSet, requiredPairsCount, opponentMap) {
+  const allPairs = [];
+  const unusedPairs = [];
+  const usedPairs = [];
+
+  // Build all pairs and classify (new vs old)
+  for (let i = 0; i < playing.length; i++) {
+    for (let j = i + 1; j < playing.length; j++) {
+      const a = playing[i], b = playing[j];
+      const key = [a, b].slice().sort().join("&");
+      const isNew = !usedPairsSet || !usedPairsSet.has(key);
+
+      const pairObj = { a, b, key, isNew };
+      allPairs.push(pairObj);
+
+      if (isNew) unusedPairs.push(pairObj);
+      else usedPairs.push(pairObj);
+    }
+  }
+
+  // ------------------------------
+  //  Opponent Freshness Score
+  // ------------------------------
+  function calculateOpponentFreshnessScore(currentPair, selectedPairs, opponentMap) {
+    let totalScore = 0;
+    const [a, b] = currentPair;
+
+    for (const [x, y] of selectedPairs) {
+      const pair1 = [x, y];
+      const pair2 = [a, b];
+
+      for (const bPlayer of pair2) {
+        let newOpp = 0;
+        for (const aPlayer of pair1) {
+          // Your exact logic:
+          if ((opponentMap.get(bPlayer)?.get(aPlayer) || 0) === 1) {
+            newOpp += 1;
+          }
+        }
+        // Your exact scoring:
+        totalScore += (newOpp === 2) ? 2 : (newOpp === 1 ? 1 : 0);
+      }
+    }
+    return totalScore;
+  }
+
+  // ------------------------------
+  //  DFS Backtracking With Scoring
+  // ------------------------------
+  function pickBestFromCandidates(candidates) {
+    const usedPlayers = new Set();
+    const selected = [];
+    let best = null;
+
+    function dfs(startIndex, baseScore) {
+      if (selected.length === requiredPairsCount) {
+        if (!best || baseScore > best.score) {
+          best = { score: baseScore, pairs: selected.slice() };
+        }
+        return;
+      }
+
+      for (let i = startIndex; i < candidates.length; i++) {
+        const { a, b, isNew } = candidates[i];
+        if (usedPlayers.has(a) || usedPlayers.has(b)) continue;
+
+        usedPlayers.add(a);
+        usedPlayers.add(b);
+        selected.push([a, b]);
+
+        // opponent freshness score
+        const oppScore = calculateOpponentFreshnessScore(
+          [a, b],
+          selected.slice(0, -1),
+          opponentMap
+        );
+
+        // new-pair priority (100 per new pair)
+        const newPairScore = isNew ? 100 : 0;
+
+        dfs(i + 1, baseScore + newPairScore + oppScore);
+
+        selected.pop();
+        usedPlayers.delete(a);
+        usedPlayers.delete(b);
+      }
+    }
+
+    dfs(0, 0);
+    return best ? best.pairs : null;
+  }
+
+  // -----------------------------------
+  // 1) Try unused (new) pairs only
+  // -----------------------------------
+  if (unusedPairs.length >= requiredPairsCount) {
+    const best = pickBestFromCandidates(unusedPairs);
+    if (best) return best;
+  }
+
+  // -----------------------------------
+  // 2) Try unused + used
+  // -----------------------------------
+  const combined = [...unusedPairs, ...usedPairs];
+  if (combined.length >= requiredPairsCount) {
+    const best = pickBestFromCandidates(combined);
+    if (best) return best;
+  }
+
+  // -----------------------------------
+  // 3) Try all pairs as last fallback
+  // -----------------------------------
+  if (allPairs.length >= requiredPairsCount) {
+    const best = pickBestFromCandidates(allPairs);
+    if (best) return best;
+  }
+
+  return [];
+}
+
+function findDisjointPairs3(playing, usedPairsSet, requiredPairsCount) {
   const allPairs = [];
   const unusedPairs = [];
   const usedPairs = [];
@@ -377,7 +497,7 @@ function findDisjointPairs(playing, usedPairsSet, requiredPairsCount) {
   }
 
   // 2. Backtracking with newness score
-  function backtrack(candidates) {
+  function backtrack3(candidates) {
     let bestSolution = null;
     let bestScore = -1;
     const result = [];
@@ -562,7 +682,7 @@ if (fixedPairs.length > 0 && numResting >= 2) {
   let freePlayersThisRound = playing.filter(p => !fixedPairPlayersThisRound.has(p));
   const requiredPairsCount = Math.floor(numPlayersPerRound / 2);
   let neededFreePairs = requiredPairsCount - fixedPairsThisRound.length;
-  let selectedPairs = findDisjointPairs(freePlayersThisRound, pairPlayedSet, neededFreePairs);
+  let selectedPairs = findDisjointPairs(freePlayersThisRound, pairPlayedSet, neededFreePairs, opponentMap);
   let finalFreePairs = selectedPairs;
   if (!finalFreePairs || finalFreePairs.length < neededFreePairs) {
     const free = freePlayersThisRound.slice();
