@@ -885,8 +885,26 @@ DISPLAY & UI FUNCTIONS
  
 ========================= */
 // Main round display
-function showRound(index) {
+
+function clearPreviousRound() {
   const resultsDiv = document.getElementById('game-results');
+
+  // Remove all child nodes (old rounds)
+  while (resultsDiv.firstChild) {
+    resultsDiv.removeChild(resultsDiv.firstChild);
+  }
+
+  // Remove any lingering selection highlights
+  window.selectedPlayer = null;
+  window.selectedTeam = null;
+  document.querySelectorAll('.selected, .selected-team, .swapping').forEach(el => {
+    el.classList.remove('selected', 'selected-team', 'swapping');
+  });
+}
+
+function showRound(index) {
+  clearPreviousRound();
+ const resultsDiv = document.getElementById('game-results');
   resultsDiv.innerHTML = '';
   const data = allRounds[index];
   if (!data) return;
