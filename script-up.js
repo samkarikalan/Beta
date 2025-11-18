@@ -478,125 +478,6 @@ function findDisjointPairs(playing, usedPairsSet, requiredPairsCount, opponentMa
   return [];
 }
 
-function findDisjointPairs3(playing, usedPairsSet, requiredPairsCount) {
-  const allPairs = [];
-  const unusedPairs = [];
-  const usedPairs = [];
-
-  // 1. Generate all pairs
-  for (let i = 0; i < playing.length; i++) {
-    for (let j = i + 1; j < playing.length; j++) {
-      const a = playing[i], b = playing[j];
-      const key = [a,b].slice().sort().join("&");
-      const isNew = !usedPairsSet || !usedPairsSet.has(key);
-      const pairObj = { a, b, key, isNew };
-      allPairs.push(pairObj);
-      if (isNew) unusedPairs.push(pairObj);
-      else usedPairs.push(pairObj);
-    }
-  }
-
-  // 2. Backtracking with newness score
-  function backtrack3(candidates) {
-    let bestSolution = null;
-    let bestScore = -1;
-    const result = [];
-    const usedPlayers = new Set();
-
-    function dfs(start, scoreSum) {
-      if (result.length === requiredPairsCount) {
-        if (scoreSum > bestScore) {
-          bestScore = scoreSum;
-          bestSolution = result.slice();
-        }
-        return;
-      }
-      for (let i = start; i < candidates.length; i++) {
-        const { a, b, isNew } = candidates[i];
-        if (usedPlayers.has(a) || usedPlayers.has(b)) continue;
-
-        usedPlayers.add(a);
-        usedPlayers.add(b);
-        result.push([a,b]);
-
-        dfs(i+1, scoreSum + (isNew ? 1 : 0)); // newness score increment
-
-        result.pop();
-        usedPlayers.delete(a);
-        usedPlayers.delete(b);
-      }
-    }
-
-    dfs(0,0);
-    return bestSolution;
-  }
-
-  // 3. Fallback logic preserved, just call backtrack on each set
-  if (unusedPairs.length >= requiredPairsCount) {
-    const res = backtrack(unusedPairs);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-
-  const combined = [...unusedPairs, ...usedPairs];
-  if (combined.length >= requiredPairsCount) {
-    const res = backtrack(combined);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-
-  if (allPairs.length >= requiredPairsCount) {
-    const res = backtrack(allPairs);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-
-  return [];
-}
-
-function findDisjointPairs2(playing, usedPairsSet, requiredPairsCount) {
-  const allPairs = [];
-  const unusedPairs = [];
-  const usedPairs = [];
-  for (let i = 0; i < playing.length; i++) {
-    for (let j = i + 1; j < playing.length; j++) {
-      const a = playing[i], b = playing[j];
-      const key = [a, b].slice().sort().join("&");
-      allPairs.push({ a, b, key });
-      if (!usedPairsSet || !usedPairsSet.has(key)) unusedPairs.push({ a, b, key });
-      else usedPairs.push({ a, b, key });
-    }
-  }
-  function backtrack2(candidates) {
-    const result = [];
-    const usedPlayers = new Set();
-    function dfs(start) {
-      if (result.length === requiredPairsCount) return true;
-      for (let i = start; i < candidates.length; i++) {
-        const { a, b } = candidates[i];
-        if (usedPlayers.has(a) || usedPlayers.has(b)) continue;
-        usedPlayers.add(a); usedPlayers.add(b);
-        result.push([a, b]);
-        if (dfs(i + 1)) return true;
-        result.pop();
-        usedPlayers.delete(a); usedPlayers.delete(b);
-      }
-      return false;
-    }
-    return dfs(0) ? result.slice() : null;
-  }
-  if (unusedPairs.length >= requiredPairsCount) {
-    const res = backtrack(unusedPairs);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-  const combined = [...unusedPairs, ...usedPairs];
-  if (combined.length >= requiredPairsCount) {
-    const res = backtrack(combined);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-  if (allPairs.length >= requiredPairsCount) {
-    const res = backtrack(allPairs);
-    if (res && res.length === requiredPairsCount) return res;
-  }
-  return [];
-}
 
 function AischedulerNextRound() {
   const {
@@ -844,40 +725,6 @@ function getMatchupScores(allPairs, opponentMap) {
 }
 
 
-function getMatchupScores2(allPairs, opponentMap) {
-  const matchupScores = [];
-  for (let i = 0; i < allPairs.length; i++) {
-    for (let j = i + 1; j < allPairs.length; j++) {
-      const [a1, a2] = allPairs[i];
-      const [b1, b2] = allPairs[j];
-      // --- Count past encounters for each of the 4 possible sub-matchups ---
-      const ab11 = opponentMap.get(a1)?.get(b1) || 0;
-      const ab12 = opponentMap.get(a1)?.get(b2) || 0;
-      const ab21 = opponentMap.get(a2)?.get(b1) || 0;
-      const ab22 = opponentMap.get(a2)?.get(b2) || 0;
-      // --- Total previous encounters (lower = better) ---
-      const totalScore = ab11 + ab12 + ab21 + ab22;
-      // --- Freshness: number of unseen sub-matchups (4 = completely new) ---
-      const freshness =
-        (ab11 === 0 ? 1 : 0) +
-        (ab12 === 0 ? 1 : 0) +
-        (ab21 === 0 ? 1 : 0) +
-        (ab22 === 0 ? 1 : 0);
-      matchupScores.push({
-        pair1: allPairs[i],
-        pair2: allPairs[j],
-        freshness,   // 0–4
-        totalScore,  // numeric repetition penalty
-      });
-    }
-  }
-  // --- Sort by freshness DESC (prefer new opponents), then by totalScore ASC ---
-  matchupScores.sort((a, b) => {
-    if (b.freshness !== a.freshness) return b.freshness - a.freshness;
-    return a.totalScore - b.totalScore;
-  });
-  return matchupScores;
-}
 
 /* =========================
  
@@ -885,403 +732,254 @@ DISPLAY & UI FUNCTIONS
  
 ========================= */
 // Main round display
+/* =========================
+   GLOBALS
+========================= */
+let swapInProgress = false;
+const swapQueue = [];
+let currentRoundIndex = 0;
+
+/* =========================
+   SHOW ROUND
+========================= */
 function showRound(index) {
   const resultsDiv = document.getElementById('game-results');
-  resultsDiv.innerHTML = '';
+  resultsDiv.innerHTML = ''; // Clear old round
+
+  // Reset selection globals
+  window.selectedPlayer = null;
+  window.selectedTeam = null;
+  document.querySelectorAll('.selected, .selected-team').forEach(el => el.classList.remove('selected', 'selected-team'));
+
   const data = allRounds[index];
   if (!data) return;
-  // ✅ Update round title
+
+  // Round title
   const roundTitle = document.getElementById("roundTitle");
   roundTitle.className = "round-title";
   roundTitle.innerText = data.round;
-  // ✅ Create sections safely
-  let restDiv = null;
-  if (data.resting && data.resting.length !== 0) {
-    restDiv = renderRestingPlayers(data, index);
-  }
+
+  // Resting players
+  const restDiv = data.resting?.length ? renderRestingPlayers(data, index) : null;
   const gamesDiv = renderGames(data, index);
-  // ✅ Wrap everything in a container to distinguish latest vs played
+
   const wrapper = document.createElement('div');
-  const isLatest = index === allRounds.length - 1;
-  wrapper.className = isLatest ? 'latest-round' : 'played-round';
-  // ✅ Append conditionally
-  if (restDiv) {
-    wrapper.append(restDiv, gamesDiv);
-  } else {
-    wrapper.append(gamesDiv);
-  }
+  wrapper.className = index === allRounds.length - 1 ? 'latest-round' : 'played-round';
+  if (restDiv) wrapper.append(restDiv, gamesDiv);
+  else wrapper.append(gamesDiv);
+
   resultsDiv.append(wrapper);
-  // ✅ Navigation buttons
+
+  // Navigation
   document.getElementById('prevBtn').disabled = index === 0;
-  document.getElementById('nextBtn').disabled = false;
+  document.getElementById('nextBtn').disabled = index === allRounds.length - 1;
 }
-// Resting players display
+
+/* =========================
+   RENDERING FUNCTIONS
+========================= */
 function renderRestingPlayers(data, index) {
   const restDiv = document.createElement('div');
   restDiv.className = 'round-header';
   const title = document.createElement('div');
   title.innerText = 'Resting:';
   restDiv.appendChild(title);
+
   const restBox = document.createElement('div');
   restBox.className = 'rest-box';
-  if (data.resting.length === 0) {
-    const span = document.createElement('span');
-    span.innerText = 'None';
-    restBox.appendChild(span);
-  } else {
-    data.resting.forEach(player => {
-      restBox.appendChild(makeRestButton(player, data, index));
-    });
-  }
+  data.resting.forEach(player => restBox.appendChild(makeRestButton(player, data, index)));
   restDiv.appendChild(restBox);
   return restDiv;
 }
+
 function renderGames(data, index) {
   const wrapper = document.createElement('div');
   data.games.forEach((game, gameIndex) => {
-    // 🟦 Create the main container for the match
     const teamsDiv = document.createElement('div');
     teamsDiv.className = 'teams';
-    // Helper → Team letters (A, B, C, D...)
-    const getTeamLetter = (gameIndex, teamSide) => {
-      const teamNumber = gameIndex * 2 + (teamSide === 'L' ? 0 : 1);
-      return String.fromCharCode(65 + teamNumber);
-    };
+
     const makeTeamDiv = (teamSide) => {
       const teamDiv = document.createElement('div');
       teamDiv.className = 'team';
       teamDiv.dataset.teamSide = teamSide;
       teamDiv.dataset.gameIndex = gameIndex;
-      // 🔁 Swap icon
+
       const swapIcon = document.createElement('div');
       swapIcon.className = 'swap-icon';
       swapIcon.innerHTML = '🔁';
       teamDiv.appendChild(swapIcon);
-      // 👥 Add player buttons
+
       const teamPairs = teamSide === 'L' ? game.pair1 : game.pair2;
       teamPairs.forEach((p, i) => {
         teamDiv.appendChild(makePlayerButton(p, teamSide, gameIndex, i, data, index));
       });
-      // ✅ Swap logic (only for latest round)
-      const isLatestRound = index === allRounds.length - 1;
-      if (isLatestRound) {
+
+      const isLatest = index === allRounds.length - 1;
+      if (isLatest) {
         swapIcon.addEventListener('click', (e) => {
-          e.stopPropagation();
-          e.preventDefault();
+          e.stopPropagation(); e.preventDefault();
           if (window.selectedTeam) {
             const src = window.selectedTeam;
-            if (src.gameIndex !== gameIndex) {
-              handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, data, index);
-            }
+            if (src.gameIndex !== gameIndex) handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, data, index);
             window.selectedTeam = null;
-            document
-              .querySelectorAll('.selected-team')
-              .forEach(b => b.classList.remove('selected-team'));
+            document.querySelectorAll('.selected-team').forEach(el => el.classList.remove('selected-team'));
           } else {
             window.selectedTeam = { teamSide, gameIndex };
             teamDiv.classList.add('selected-team');
           }
         });
       }
+
       return teamDiv;
     };
-    // 🟢 Create left & right sides
+
     const team1 = makeTeamDiv('L');
     const team2 = makeTeamDiv('R');
-    // ⚪ VS label
     const vs = document.createElement('span');
     vs.className = 'vs';
     vs.innerText = 'VS';
-    // Add everything to container
+
     teamsDiv.append(team1, vs, team2);
     wrapper.appendChild(teamsDiv);
   });
   return wrapper;
 }
-// Games display
-function renderGames2(data, index) {
-  const wrapper = document.createElement('div');
-  data.games.forEach((game, gameIndex) => {
-    const card = document.createElement('div');
-    card.className = 'match-card';
-    const teamsDiv = document.createElement('div');
-    teamsDiv.className = 'teams';
-    // Helper → Team letters (A, B, C, D...)
-    const getTeamLetter = (gameIndex, teamSide) => {
-      const teamNumber = gameIndex * 2 + (teamSide === 'L' ? 0 : 1);
-      return String.fromCharCode(65 + teamNumber);
-    };
-    const makeTeamDiv = (teamSide) => {
-      const teamDiv = document.createElement('div');
-      teamDiv.className = 'team';
-      teamDiv.dataset.teamSide = teamSide;
-      teamDiv.dataset.gameIndex = gameIndex;
-      // 🟢 Exchange icon button
-      const swapIcon = document.createElement('div');
-      swapIcon.className = 'swap-icon';
-      swapIcon.innerHTML = '🔁'; // you can replace with ↔️ or ⟳
-      teamDiv.appendChild(swapIcon);
-      // 🎾 Add player buttons
-      const teamPairs = teamSide === 'L' ? game.pair1 : game.pair2;
-      teamPairs.forEach((p, i) => {
-        teamDiv.appendChild(makePlayerButton(p, teamSide, gameIndex, i, data, index));
-      });
-      // 🟦 Team swapping only for latest round
-      const isLatestRound = index === allRounds.length - 1;
-      if (isLatestRound) {
-        swapIcon.addEventListener('click', (e) => {
-          e.stopPropagation(); // prevent bubbling
-          e.preventDefault();
-          // ✅ Swap logic
-          if (window.selectedTeam) {
-            const src = window.selectedTeam;
-            if (src.gameIndex !== gameIndex) {
-              handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, data, index);
-            }
-            window.selectedTeam = null;
-            document.querySelectorAll('.selected-team').forEach(b => b.classList.remove('selected-team'));
-          } else {
-            window.selectedTeam = { teamSide, gameIndex };
-            teamDiv.classList.add('selected-team');
-          }
-        });
-      }
-      return teamDiv;
-    };
-    const team1 = makeTeamDiv('L');
-    const team2 = makeTeamDiv('R');
-    const vs = document.createElement('span');
-    vs.className = 'vs';
-    vs.innerText = 'VS';
-    teamsDiv.append(team1, vs, team2);
-    card.appendChild(teamsDiv);
-    wrapper.appendChild(card);
-  });
-  return wrapper;
-}
+
+/* =========================
+   PLAYER / REST BUTTONS
+========================= */
 function makePlayerButton(name, teamSide, gameIndex, playerIndex, data, index) {
   const btn = document.createElement('button');
   btn.className = teamSide === 'L' ? 'Lplayer-btn' : 'Rplayer-btn';
   btn.innerText = name;
-  const isLatestRound = index === allRounds.length - 1;
-  if (!isLatestRound) return btn; // not interactive if not latest
-  // ✅ Click/tap to select or swap (no long press)
+
+  const isLatest = index === allRounds.length - 1;
+  if (!isLatest) return btn;
+
   const handleTap = (e) => {
     e.preventDefault();
-    // If another player already selected → swap between teams
     if (window.selectedPlayer) {
       const src = window.selectedPlayer;
       if (src.from === 'rest') {
-        // Coming from rest list → move into team
         handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, src.playerName);
       } else {
-        // Swap between team slots
-        handleDropBetweenTeams(
-          e,
-          teamSide,
-          gameIndex,
-          playerIndex,
-          data,
-          index,
-          src
-        );
+        handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index, src);
       }
-      // Clear selection
       window.selectedPlayer = null;
       document.querySelectorAll('.selected').forEach(b => b.classList.remove('selected'));
     } else {
-      // Select this player for swap
-      window.selectedPlayer = {
-        playerName: name,
-        teamSide,
-        gameIndex,
-        playerIndex,
-        from: 'team'
-      };
+      window.selectedPlayer = { playerName: name, teamSide, gameIndex, playerIndex, from: 'team' };
       btn.classList.add('selected');
     }
   };
+
   btn.addEventListener('click', handleTap);
   btn.addEventListener('touchstart', handleTap);
   return btn;
 }
+
 function makeRestButton(player, data, index) {
   const btn = document.createElement('button');
-  btn.innerText = player;
   btn.className = 'rest-btn';
-  // 🎨 Color by player number
-  const match = player.match(/\.?#(\d+)/);
-  if (match) {
-    const num = parseInt(match[1]);
-    const hue = (num * 40) % 360;
-    btn.style.backgroundColor = `hsl(${hue}, 65%, 45%)`;
-  } else {
-    btn.style.backgroundColor = '#777';
-  }
-  btn.style.color = 'white';
-  const isLatestRound = index === allRounds.length - 1;
-  if (!isLatestRound) return btn; // not interactive if not latest
-  // ✅ Tap-to-move between Rest ↔ Team
+  btn.innerText = player;
+
+  const isLatest = index === allRounds.length - 1;
+  if (!isLatest) return btn;
+
   const handleTap = (e) => {
     e.preventDefault();
-    // If a team player selected → move from rest to team
     if (window.selectedPlayer) {
       const src = window.selectedPlayer;
-      if (src.from === 'team') {
-        handleDropRestToTeam(e, src.teamSide, src.gameIndex, src.playerIndex, data, index, player);
-      }
+      if (src.from === 'team') handleDropRestToTeam(e, src.teamSide, src.gameIndex, src.playerIndex, data, index, player);
       window.selectedPlayer = null;
       document.querySelectorAll('.selected').forEach(b => b.classList.remove('selected'));
     } else {
-      // Select this resting player
       window.selectedPlayer = { playerName: player, from: 'rest' };
       btn.classList.add('selected');
     }
   };
+
   btn.addEventListener('click', handleTap);
   btn.addEventListener('touchstart', handleTap);
   return btn;
 }
-function makeTeamButton(label, teamSide, gameIndex, data, index) {
-  const btn = document.createElement('button');
-  btn.className = 'team-btn';
-  btn.innerText = label; // Visible label stays simple (Team L / Team R)
-  // Store internal unique info in dataset
-  btn.dataset.gameIndex = gameIndex;
-  btn.dataset.teamSide = teamSide;
-  const isLatestRound = index === allRounds.length - 1;
-  if (!isLatestRound) return btn;
-  btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    if (window.selectedTeam) {
-      const src = window.selectedTeam;
-      if (src.gameIndex !== gameIndex) {
-        handleTeamSwapAcrossCourts(src, { teamSide, gameIndex }, data, index);
-      }
-      window.selectedTeam = null;
-      document.querySelectorAll('.selected-team').forEach(b => b.classList.remove('selected-team'));
-    } else {
-      // Store internal info for selection
-      window.selectedTeam = { teamSide, gameIndex };
-      btn.classList.add('selected-team');
-    }
-  });
-  return btn;
-}
-function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
-  // ✅ For desktop drag
-  const drop = !movingPlayer && e.dataTransfer
-    ? JSON.parse(e.dataTransfer.getData('text/plain'))
-    : { type: 'rest', player: movingPlayer };
-  if (drop.type !== 'rest' || !drop.player) return;
+
+/* =========================
+   SWAP LOGIC
+========================= */
+function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer) {
   const teamKey = teamSide === 'L' ? 'pair1' : 'pair2';
-  const restIndex = data.resting.indexOf(drop.player);
-  if (restIndex === -1) return;
-  const baseNewPlayer = drop.player.replace(/#\d+$/, '');
   const oldPlayer = data.games[gameIndex][teamKey][playerIndex];
-  data.games[gameIndex][teamKey][playerIndex] = baseNewPlayer;
-  const { restCount } = schedulerState;
-  if (oldPlayer && oldPlayer !== '(Empty)') {
-    const cleanOld = oldPlayer.replace(/#\d+$/, '');
-    const newCount = (restCount.get(cleanOld) || 0) + 1;
-    restCount.set(cleanOld, newCount);
-    data.resting[restIndex] = `${cleanOld}#${newCount}`;
-  } else {
-    data.resting[restIndex] = null;
-  }
-  restCount.set(baseNewPlayer, Math.max((restCount.get(baseNewPlayer) || 0) - 1, 0));
-  data.resting = data.resting.filter(p => p && p !== '(Empty)');
-  showRound(index);
-}
-function handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index, src) {
-  // src contains info about the player you selected first
-  const { teamSide: fromTeamSide, gameIndex: fromGameIndex, playerIndex: fromPlayerIndex, playerName: player } = src;
-  if (!player || player === '(Empty)') return;
-  const fromTeamKey = fromTeamSide === 'L' ? 'pair1' : 'pair2';
-  const toTeamKey = teamSide === 'L' ? 'pair1' : 'pair2';
-  const fromTeam = data.games[fromGameIndex][fromTeamKey];
-  const toTeam = data.games[gameIndex][toTeamKey];
-  // No need to strip #index anymore
-  const movedPlayer = player;
-  const targetPlayer = toTeam[playerIndex];
-  // ✅ Swap players
-  toTeam[playerIndex] = movedPlayer;
-  fromTeam[fromPlayerIndex] = targetPlayer && targetPlayer !== '(Empty)' ? targetPlayer : '(Empty)';
+
+  data.games[gameIndex][teamKey][playerIndex] = movingPlayer;
+
+  const restIndex = data.resting.indexOf(movingPlayer);
+  if (restIndex > -1) data.resting.splice(restIndex, 1);
+
+  if (oldPlayer && oldPlayer !== '(Empty)') data.resting.push(oldPlayer);
+
+  window.selectedPlayer = null;
+  document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+
   showRound(index);
 }
 
-// Add a global flag to prevent concurrent swaps
-let swapInProgress = false;
-const swapQueue = [];
+function handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index, src) {
+  const { teamSide: fromTeamSide, gameIndex: fromGameIndex, playerIndex: fromPlayerIndex, playerName: player } = src;
+  if (!player || player === '(Empty)') return;
+
+  const fromKey = fromTeamSide === 'L' ? 'pair1' : 'pair2';
+  const toKey = teamSide === 'L' ? 'pair1' : 'pair2';
+
+  const temp = data.games[gameIndex][toKey][playerIndex];
+  data.games[gameIndex][toKey][playerIndex] = player;
+  data.games[fromGameIndex][fromKey][fromPlayerIndex] = temp || '(Empty)';
+
+  window.selectedPlayer = null;
+  document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+
+  showRound(index);
+}
 
 function handleTeamSwapAcrossCourts(src, target, data, index) {
   if (!src || !target) return;
   if (src.gameIndex === target.gameIndex && src.teamSide === target.teamSide) return;
 
-  // Queue the swap if another is in progress
-  if (swapInProgress) {
-    swapQueue.push({ src, target, data, index });
-    return;
-  }
-
+  if (swapInProgress) { swapQueue.push({ src, target, data, index }); return; }
   swapInProgress = true;
 
   const srcKey = src.teamSide === 'L' ? 'pair1' : 'pair2';
   const targetKey = target.teamSide === 'L' ? 'pair1' : 'pair2';
 
-  // Fetch teams immediately before swapping
-  const srcTeam = data.games[src.gameIndex][srcKey];
-  const targetTeam = data.games[target.gameIndex][targetKey];
+  const temp = data.games[src.gameIndex][srcKey];
+  data.games[src.gameIndex][srcKey] = data.games[target.gameIndex][targetKey];
+  data.games[target.gameIndex][targetKey] = temp;
 
-  // Animation highlight
-  const srcDiv = document.querySelector(`.team[data-game-index="${src.gameIndex}"][data-team-side="${src.teamSide}"]`);
-  const targetDiv = document.querySelector(`.team[data-game-index="${target.gameIndex}"][data-team-side="${target.teamSide}"]`);
-  [srcDiv, targetDiv].forEach(div => {
-    div.classList.add('swapping');
-    setTimeout(() => div.classList.remove('swapping'), 600);
-  });
+  window.selectedTeam = null;
+  document.querySelectorAll('.selected-team').forEach(el => el.classList.remove('selected-team'));
 
-  setTimeout(() => {
-    // Swap teams safely using temporary variable
-    const temp = data.games[src.gameIndex][srcKey];
-    data.games[src.gameIndex][srcKey] = data.games[target.gameIndex][targetKey];
-    data.games[target.gameIndex][targetKey] = temp;
+  showRound(index);
 
-    // Refresh the round
-    showRound(index);
-
-    swapInProgress = false;
-
-    // Process next swap in queue if any
-    if (swapQueue.length > 0) {
-      const nextSwap = swapQueue.shift();
-      handleTeamSwapAcrossCourts(nextSwap.src, nextSwap.target, nextSwap.data, nextSwap.index);
-    }
-  }, 300);
+  swapInProgress = false;
+  if (swapQueue.length) {
+    const next = swapQueue.shift();
+    handleTeamSwapAcrossCourts(next.src, next.target, next.data, next.index);
+  }
 }
 
-
-function handleTeamSwapAcrossCourts2(src, target, data, index) {
-  if (!src || !target) return;
-  if (src.gameIndex === target.gameIndex && src.teamSide === target.teamSide) return;
-  const srcKey = src.teamSide === 'L' ? 'pair1' : 'pair2';
-  const targetKey = target.teamSide === 'L' ? 'pair1' : 'pair2';
-  const srcTeam = data.games[src.gameIndex][srcKey];
-  const targetTeam = data.games[target.gameIndex][targetKey];
-  // Animation highlight
-  const srcDiv = document.querySelector(`.team[data-game-index="${src.gameIndex}"][data-team-side="${src.teamSide}"]`);
-  const targetDiv = document.querySelector(`.team[data-game-index="${target.gameIndex}"][data-team-side="${target.teamSide}"]`);
-  [srcDiv, targetDiv].forEach(div => {
-    div.classList.add('swapping');
-    setTimeout(() => div.classList.remove('swapping'), 600);
-  });
-  // Swap and refresh after short delay
-  setTimeout(() => {
-    data.games[src.gameIndex][srcKey] = [...targetTeam];
-    data.games[target.gameIndex][targetKey] = [...srcTeam];
-    showRound(index);
-  }, 300);
+/* =========================
+   ROUND NAVIGATION
+========================= */
+function nextRound() {
+  backupSchedulerState();
+  if (currentRoundIndex + 1 < allRounds.length) currentRoundIndex++;
+  else { allRounds.push(AischedulerNextRound()); currentRoundIndex = allRounds.length - 1; }
+  showRound(currentRoundIndex);
 }
+
+function prevRound() { if (currentRoundIndex > 0) currentRoundIndex--; showRound(currentRoundIndex); }
+function resetRounds() { allRounds.length = 0; currentRoundIndex = 0; document.getElementById('goToRoundsBtn').disabled = false; goToRounds(); }
+
 /* =========================
  
 PAGE NAVIGATION
@@ -1294,6 +992,7 @@ function resetRounds() {
   const btn = document.getElementById('goToRoundsBtn');
   btn.enabled;
 }
+
 function goToRounds() {
   const numCourtsInput = parseInt(document.getElementById('num-courts').value);
   const totalPlayers = players.length;
@@ -1383,7 +1082,7 @@ function goBack() {
   btn.disabled = false;
   //} else if (pin !== null) alert("Incorrect PIN!");
 }
-function nextRound() {
+function nextRound2() {
   backupSchedulerState();
   if (currentRoundIndex + 1 < allRounds.length) {
     currentRoundIndex++;
