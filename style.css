@@ -370,14 +370,21 @@ h1 {
 /* Name input */
 #player-list-table input[type="text"] {
   width: 95%;
-  height: 28px; /* match row nicely */
+  height: 28px;
   padding: 5px;
   font-size: 1.25rem;
   text-align: left;
-  outline: none;
-  border: none;
-}
 
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+
+  /* iOS Safari removes inner shadow */
+  -webkit-appearance: none !important;
+  appearance: none !important;
+
+  background-color: transparent;
+}
 .games-played {
   width: 44px;
   height: 44px;
