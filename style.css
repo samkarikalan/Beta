@@ -235,11 +235,11 @@ h1 {
 .Lplayer-btn.selected,
 .Rplayer-btn.selected,
 .rest-btn.selected {
-  outline: 0.125rem solid #4caf50;
-  background: grey !important;
+  outline: 0.5rem solid #4caf50;
+  background: white !important;
   color: #fff;
   box-shadow: 0 0 0.625rem #4caf50;
-  animation: borderPulse 1s ease-in-out infinite;
+  animation: borderPulse 2s ease-in-out infinite;
 }
 @keyframes borderPulse {
   0%, 100% {
