@@ -373,9 +373,6 @@ h1 {
   height: 28px; /* match row nicely */
   padding: 5px;
   font-size: 1.25rem;
-  border: 1px solid #aaa;
-  border-radius: 6px;
-  box-sizing: border-box;
   text-align: left;
 }
 /* Checkbox */
