@@ -570,6 +570,58 @@ h1 {
 .cancel-btn:hover {
   background: #ff3b3b;
 }
+
+  #importModal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+  }
+
+  #importModal .modal-content {
+    background: #fff;
+    width: 90%;
+    max-width: 450px;
+    padding: 15px;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+  }
+
+  /* Top bar: gender left, buttons right */
+  .modal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .gender-select label {
+    margin-right: 10px;
+    font-size: 14px;
+  }
+
+  .modal-buttons-top button {
+    margin-left: 8px;
+    padding: 5px 12px;
+    font-size: 14px;
+  }
+
+  #players-textarea {
+    width: 100%;
+    resize: vertical;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    box-sizing: border-box;
+  }
+
+
 /* Round Navigation */
 .round-navigation {
   display: flex;
