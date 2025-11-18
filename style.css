@@ -374,7 +374,31 @@ h1 {
   padding: 5px;
   font-size: 1.25rem;
   text-align: left;
+  outline: none;
 }
+
+.games-played {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: white;
+  margin-left: 8px;
+  transition: background-color 0.3s;
+}
+
+/* Colors for game count */
+.games-0 { background-color: #cccccc; }  /* 0 games */
+.games-1 { background-color: #9be0ff; }  /* light blue */
+.games-2 { background-color: #4db8ff; }
+.games-3 { background-color: #1a94ff; }
+.games-4 { background-color: #0066cc; }
+.games-5 { background-color: #004c99; }
+.games-6 { background-color: #003366; }
 /* Checkbox */
 #player-list-table input[type="checkbox"] {
   width: 22px;
