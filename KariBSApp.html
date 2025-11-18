@@ -13,19 +13,27 @@
       <div class="container">
         <h1>Kari Scheduler</h1>
         <div class="card"><button onclick="showImportModal()">Import Multiple Players</button></div>
-        <div id="importModal">
-          <div class="modal-content">
-            <textarea id="players-textarea" rows="15" placeholder="Name,Gender&#10;Kari,Male&#10;Bhavani,Female"></textarea>
-            <div class="gender-select">
-              <label><input type="radio" name="genderSelect" value="Male" checked> Male</label>
-              <label><input type="radio" name="genderSelect" value="Female"> Female</label>
-            </div>
-            <div class="modal-buttons">
-              <button class="ok-btn" onclick="addPlayersFromText()">OK</button>
-              <button class="cancel-btn" onclick="hideImportModal()">Cancel</button>
-            </div>
-          </div>
-        </div>
+      <div id="importModal">
+  <div class="modal-content">
+
+    <!-- TOP BAR -->
+  <div class="modal-top">
+      <div class="gender-select">
+        <label><input type="radio" name="genderSelect" value="Male" checked> Male</label>
+        <label><input type="radio" name="genderSelect" value="Female"> Female</label>
+      </div>
+
+      <div class="modal-buttons-top">
+        <button class="ok-btn" onclick="addPlayersFromText()">OK</button>
+        <button class="cancel-btn" onclick="hideImportModal()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- TEXTAREA -->
+    <textarea id="players-textarea" rows="12" placeholder="Name,Gender&#10;Kari,Male&#10;Bhavani,Female"></textarea>
+
+  </div>
+</div>
         <div class="card">
           <input type="text" id="player-name" placeholder="Enter Player Name">
           <select id="player-gender"><option value="Male">Male</option><option value="Female">Female</option></select>
