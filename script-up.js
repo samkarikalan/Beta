@@ -123,51 +123,45 @@ function updatePlayerList() {
     if (!p.active) row.classList.add('inactive');
 
     row.innerHTML = `
-      <!-- No. column (select to move) -->
       <td class="no-col" style="text-align:center; font-weight:bold;">${i + 1}</td>
 
-      <!-- Active checkbox -->
       <td style="text-align:center;">
         <input type="checkbox" ${p.active ? 'checked' : ''} 
           onchange="editPlayer(${i}, 'active', this.checked)">
       </td>
 
-      <!-- Name -->
       <td class="Player-cell">
-        <input type="text" value="${p.name}" 
+        <input type="text" value="${p.name}"
            ${!p.active ? 'disabled' : ''} 
            onchange="editPlayer(${i}, 'name', this.value)">
 
-        <span class="games-played" id="games_${i}">
-        </span>
+        <span class="games-played" id="games_${i}"></span>
       </td>
 
-      <!-- Gender -->
       <td class="gender-cell">
         <label class="gender-btn male">
-          <input type="radio" name="gender-${i}" value="Male" 
-            ${p.gender === 'Male' ? 'checked' : ''} 
+          <input type="radio" name="gender-${i}" value="Male"
+            ${p.gender === 'Male' ? 'checked' : ''}
             onchange="editPlayer(${i}, 'gender', 'Male')">
           <span>M</span>
         </label>
         <label class="gender-btn female">
-          <input type="radio" name="gender-${i}" value="Female" 
-            ${p.gender === 'Female' ? 'checked' : ''} 
+          <input type="radio" name="gender-${i}" value="Female"
+            ${p.gender === 'Female' ? 'checked' : ''}
             onchange="editPlayer(${i}, 'gender', 'Female')">
           <span>F</span>
         </label>
       </td>
 
-      <!-- Delete button -->
       <td style="text-align:center;">
         <button class="tbdelete-btn" onclick="deletePlayer(${i})">&times;</button>
       </td>
     `;
 
-    // 🔥 Apply rest count + color (from schedulerState.restCount)
+    // 🔥 FIX: restCount lookup by NAME
     const gamesElem = row.querySelector(`#games_${i}`);
     if (gamesElem) {
-      const restValue = schedulerState.restCount.get(p) || 0;
+      const restValue = schedulerState.restCount.get(p.name) || 0;
       gamesElem.textContent = restValue;
       gamesElem.style.backgroundColor = getColorForValue(restValue);
     }
@@ -175,16 +169,15 @@ function updatePlayerList() {
     table.appendChild(row);
   });
 
-  // enable moving rows
   enableTouchRowReorder();
 }
 
 function getColorForValue(value) {
-  if (!value || value <= 0) return "#e0e0e0"; 
-
-  const hue = (value * 3.6) % 360; // 1–100 → 0–360
+  if (!value || value <= 0) return "#e0e0e0";
+  const hue = (value * 3.6) % 360;
   return `hsl(${hue}, 70%, 55%)`;
 }
+
 
 
 let selectedNoCell = null;
