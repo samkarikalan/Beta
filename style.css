@@ -447,6 +447,28 @@ h1 {
   transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
   user-select: none;
 }
+
+.stat-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+}
+
+.played-count, .rest-count {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+  user-select: none;
+  cursor: default;
+}
+
 /* Hide actual radio */
 .gender-btn input[type="radio"] {
   display: none;
