@@ -1232,28 +1232,55 @@ function makeTeamButton(label, teamSide, gameIndex, data, index) {
   return btn;
 }
 function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
-  // ✅ For desktop drag
   const drop = !movingPlayer && e.dataTransfer
     ? JSON.parse(e.dataTransfer.getData('text/plain'))
     : { type: 'rest', player: movingPlayer };
   if (drop.type !== 'rest' || !drop.player) return;
+
   const teamKey = teamSide === 'L' ? 'pair1' : 'pair2';
   const restIndex = data.resting.indexOf(drop.player);
   if (restIndex === -1) return;
+
   const baseNewPlayer = drop.player.replace(/#\d+$/, '');
   const oldPlayer = data.games[gameIndex][teamKey][playerIndex];
+
+  // Move new rest player to the team
   data.games[gameIndex][teamKey][playerIndex] = baseNewPlayer;
-  const { restCount } = schedulerState;
+
+  const { restCount, playedCount } = schedulerState;
+
+  // 1️⃣ HANDLE PLAYER WHO WAS IN THIS SLOT BEFORE (moving to rest)
   if (oldPlayer && oldPlayer !== '(Empty)') {
+
     const cleanOld = oldPlayer.replace(/#\d+$/, '');
-    const newCount = (restCount.get(cleanOld) || 0) + 1;
-    restCount.set(cleanOld, newCount);
-    data.resting[restIndex] = `${cleanOld}#${newCount}`;
+
+    // Rest +1
+    const newRest = (restCount.get(cleanOld) || 0) + 1;
+    restCount.set(cleanOld, newRest);
+
+    // Played -1 (but not negative)
+    const oldPlayed = Math.max((playedCount.get(cleanOld) || 0) - 1, 0);
+    playedCount.set(cleanOld, oldPlayed);
+
+    // Put this outgoing player into rest list
+    data.resting[restIndex] = `${cleanOld}#${newRest}`;
+
   } else {
+    // If slot was empty: remove dropped player from rest list
     data.resting[restIndex] = null;
   }
+
+  // 2️⃣ HANDLE NEW PLAYER (moving from rest to playing)
   restCount.set(baseNewPlayer, Math.max((restCount.get(baseNewPlayer) || 0) - 1, 0));
+
+  playedCount.set(
+    baseNewPlayer,
+    (playedCount.get(baseNewPlayer) || 0) + 1
+  );
+
+  // Clean nulls
   data.resting = data.resting.filter(p => p && p !== '(Empty)');
+
   showRound(index);
 }
 function handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index, src) {
