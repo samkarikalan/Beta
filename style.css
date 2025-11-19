@@ -386,6 +386,15 @@ h1 {
 
   background-color: transparent;
 }
+
+.Player-cell {
+  text-align: center;
+  white-space: nowrap;
+  border-left: 2px solid #ccc;
+  border-right: 2px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  padding: 0;
+}
 .games-played {
   width: 44px;
   height: 44px;
@@ -400,14 +409,7 @@ h1 {
   transition: background-color 0.3s;
 }
 
-/* Colors for game count */
-.games-0 { background-color: #cccccc; }  /* 0 games */
-.games-1 { background-color: #9be0ff; }  /* light blue */
-.games-2 { background-color: #4db8ff; }
-.games-3 { background-color: #1a94ff; }
-.games-4 { background-color: #0066cc; }
-.games-5 { background-color: #004c99; }
-.games-6 { background-color: #003366; }
+
 /* Checkbox */
 #player-list-table input[type="checkbox"] {
   width: 22px;
