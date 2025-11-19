@@ -235,20 +235,21 @@ h1 {
 .Lplayer-btn.selected,
 .Rplayer-btn.selected,
 .rest-btn.selected {
-  outline: 0.5rem solid red;
-  background: #9E1883 !important;
+  outline: 0.1rem solid red;
+  background: #F7F22D !important;
   color: black;
   box-shadow: 0 0 0.625rem #4caf50;
+  transform: scale(1.25);
   animation: borderPulse 2s ease-in-out infinite;
 }
 @keyframes borderPulse {
   0%, 100% {
     box-shadow: 0 0 0.25rem #4caf50, 0 0 0.5rem #4caf50;
-    outline-color: #B02E2E;
+    outline-color: red;
   }
   50% {
     box-shadow: 0 0 1rem #4caf50, 0 0 1.5rem #4caf50;
-    outline-color: #6fff6f;
+    outline-color: black;
   }
 }
 /* Rest Box */
