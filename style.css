@@ -396,17 +396,19 @@ h1 {
   padding: 0;
 }
 .games-played {
-  width: 44px;
-  height: 44px;
+  width: 22px;   /* same as checkbox height */
+  height: 22px;  /* same as checkbox height */
   border-radius: 50%;
-  display: flex;
+  background-color: #e0e0e0;
+  color: #333;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
-  font-weight: 600;
-  color: white;
-  margin-left: 8px;
-  transition: background-color 0.3s;
+  font-size: 12px; /* fit smaller button */
+  transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+  user-select: none;
 }
 
 
