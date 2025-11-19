@@ -1402,7 +1402,7 @@ function goToRounds() {
     alert('Number of courts could not be determined!');
     return;
   }
-  if (allRounds.length === 0) {
+  if (allRounds.length <= 1) {
     initScheduler(players.map(p => p.name), numCourts, fixedPairs);
     allRounds = [AischedulerNextRound()];
     currentRoundIndex = 0;
