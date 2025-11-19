@@ -167,13 +167,13 @@ function updatePlayerList() {
     if (playedElem) {
       const playedValue = schedulerState.PlayedCount.get(p.name) || 0;
       playedElem.textContent = playedValue;
-      playedElem.style.backgroundColor = getPlayedColor(playedValue);
+      playedElem.style.borderColor = getPlayedColor(playedValue);
     }
 
     if (restElem) {
       const restValue = schedulerState.restCount.get(p.name) || 0;
       restElem.textContent = restValue;
-      restElem.style.backgroundColor = getRestColor(restValue);
+      restElem.style.borderColor = getRestColor(restValue);
     }
 
     table.appendChild(row);
