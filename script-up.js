@@ -185,9 +185,10 @@ function updatePlayerList() {
 function getPlayedColor(value) {
   if (!value || value <= 0) return "#e0e0e0";
 
-  // Map 1–20 → hue 0–300 for clear distinction
   const maxValue = 20;
-  const hue = Math.min(value, maxValue) * (300 / maxValue); 
+  const step = 360 / maxValue;      // 360° divided by 20 numbers → 18° per step
+  const hue = (Math.min(value, maxValue) - 1) * step; // subtract 1 so 1 → 0°, 2 → 18°, etc.
+
   return `hsl(${hue}, 70%, 55%)`;
 }
 
@@ -195,8 +196,9 @@ function getRestColor(value) {
   if (!value || value <= 0) return "#e0e0e0";
 
   const maxValue = 20;
-  // Offset 180° from Played so colors differ
-  const hue = (Math.min(value, maxValue) * (300 / maxValue) + 180) % 360;
+  const step = 360 / maxValue;
+  const hue = ((Math.min(value, maxValue) - 1) * step + 180) % 360; // offset 180° for contrast
+
   return `hsl(${hue}, 70%, 55%)`;
 }
 
