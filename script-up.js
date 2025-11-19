@@ -134,14 +134,13 @@ function updatePlayerList() {
 
       <!-- Name -->
       <td class="Player-cell">
-  <input type="text" value="${p.name}" 
-     ${!p.active ? 'disabled' : ''} 
-     onchange="editPlayer(${i}, 'name', this.value)">
+        <input type="text" value="${p.name}" 
+           ${!p.active ? 'disabled' : ''} 
+           onchange="editPlayer(${i}, 'name', this.value)">
 
-  <span class="games-played" id="games_${i}">
-    ${p.played}
-  </span>
-</td>
+        <span class="games-played" id="games_${i}">
+        </span>
+      </td>
 
       <!-- Gender -->
       <td class="gender-cell">
@@ -165,12 +164,28 @@ function updatePlayerList() {
       </td>
     `;
 
+    // 🔥 Apply rest count + color (from schedulerState.restCount)
+    const gamesElem = row.querySelector(`#games_${i}`);
+    if (gamesElem) {
+      const restValue = schedulerState.restCount.get(p) || 0;
+      gamesElem.textContent = restValue;
+      gamesElem.style.backgroundColor = getColorForValue(restValue);
+    }
+
     table.appendChild(row);
   });
 
-  // Enable touch/click move on No. column
+  // enable moving rows
   enableTouchRowReorder();
 }
+
+function getColorForValue(value) {
+  if (!value || value <= 0) return "#e0e0e0"; 
+
+  const hue = (value * 3.6) % 360; // 1–100 → 0–360
+  return `hsl(${hue}, 70%, 55%)`;
+}
+
 
 let selectedNoCell = null;
 
