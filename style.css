@@ -458,15 +458,16 @@ h1 {
 }
 
 .played-count, .rest-count {
-  width: 22px;
-  height: 22px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
-  font-size: 12px;
+  border: 2px solid transparent;   /* 🔥 MUST have a border */
+  font-size: 1rem;
   font-weight: bold;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s;
+  transition: background-color 0.2s, border-color 0.2s; /* 🔥 animate border */
   user-select: none;
   cursor: default;
 }
