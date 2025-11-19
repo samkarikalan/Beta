@@ -14,6 +14,7 @@ let schedulerState = {
   numCourts: 0,
   fixedPairs: [],
   restCount: new Map(),
+  PlayedCount: new Map(),
   playedTogether: new Map(),
   fixedMap: new Map(),
   roundIndex: 0,
@@ -355,6 +356,7 @@ function initScheduler(playersList, numCourts, fixedPairs = []) {
   schedulerState.numCourts = numCourts;
   schedulerState.fixedPairs = fixedPairs;
   schedulerState.restCount = new Map(playersList.map(p => [p, 0]));
+ schedulerState.PlayedCount = new Map(playersList.map(p => [p, 0]));
   schedulerState.PlayerScoreMap = new Map(playersList.map(p => [p, 0]));
   schedulerState.playedTogether = new Map();
   schedulerState.fixedMap = new Map();
@@ -639,6 +641,7 @@ function AischedulerNextRound() {
     numCourts,
     fixedPairs,
     restCount,
+    PlayedCount,
     playedTogether,
     fixedMap,
     pairPlayedSet,
@@ -822,6 +825,13 @@ let matchupScores = getMatchupScores(allPairs, opponentMap);
     restCount.set(p, (restCount.get(p) || 0) + 1);
     return `${p}#${restCount.get(p)}`;
   });
+ // 11 Update resting counts
+  for (const pr of allPairs) { // pr = array of players in one pair/court
+   for (const playerName of pr) { // playerName = string
+     const prev = schedulerState.PlayedCount.get(playerName) || 0;
+     schedulerState.PlayedCount.set(playerName, prev + 1);
+   }
+ }
   return {
     round: roundIdx,
     resting: restingWithNumber,
@@ -1413,6 +1423,7 @@ function goToRounds() {
 }
 function restoreSchedulerState() {
     schedulerState.restCount      = structuredClone(backupState.restCount);
+    schedulerState.PlayedCount      = structuredClone(backupState.PlayedCount);
     schedulerState.playedTogether = structuredClone(backupState.playedTogether);
     schedulerState.pairPlayedSet  = new Set(backupState.pairPlayedSet);
     schedulerState.playerScoreMap = structuredClone(backupState.playerScoreMap);
@@ -1420,6 +1431,7 @@ function restoreSchedulerState() {
 }
 function backupSchedulerState() {
     backupState.restCount      = structuredClone(schedulerState.restCount);
+    backupState.PlayedCount      = structuredClone(schedulerState.PlayedCount); 
     backupState.playedTogether = structuredClone(schedulerState.playedTogether);
     backupState.pairPlayedSet  = new Set(schedulerState.pairPlayedSet);
     backupState.playerScoreMap = structuredClone(schedulerState.playerScoreMap);
