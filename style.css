@@ -563,6 +563,12 @@ h1 {
   justify-content: center;
   font-size: 1.375rem;
 }
+  .modal-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
 #importModal textarea {
   width: 100%;
   box-sizing: border-box;
