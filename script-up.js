@@ -133,11 +133,20 @@ function updatePlayerList() {
       </td>
 
       <!-- Name -->
-      <td>
-        <input type="text" value="${p.name}" 
-          ${!p.active ? 'disabled' : ''} 
-          onchange="editPlayer(${i}, 'name', this.value)">
-      </td>
+      <td class="Player-cell">
+          <input 
+            type="text" 
+            class="player-name-input"
+            value="${p.name}" 
+            ${!p.active ? 'disabled' : ''} 
+            onchange="editPlayer(${i}, 'name', this.value)"
+           >
+           <div 
+             class="games-played" 
+             id="games_${i}" 
+             >${p.played}
+           </div>
+       </td>
 
       <!-- Gender -->
       <td class="gender-cell">
