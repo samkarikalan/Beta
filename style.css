@@ -235,9 +235,9 @@ h1 {
 .Lplayer-btn.selected,
 .Rplayer-btn.selected,
 .rest-btn.selected {
-  outline: 0.5rem solid #4caf50;
+  outline: 0.5rem solid red;
   background: white !important;
-  color: #fff;
+  color: black;
   box-shadow: 0 0 0.625rem #4caf50;
   animation: borderPulse 2s ease-in-out infinite;
 }
