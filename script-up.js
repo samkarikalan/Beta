@@ -1405,7 +1405,7 @@ function backupSchedulerState() {
 function goBack() {
   // const pin = prompt("Enter 4-digit code to go back:");
   //if (pin === "0000") {
-  
+  updatePlayerList();
   document.getElementById('page1').style.display = 'block';
   document.getElementById('page2').style.display = 'none';
   isOnPage2 = false;
