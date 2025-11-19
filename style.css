@@ -122,8 +122,8 @@ h1 {
 }
 /* Highlight selected team when swapping */
 .selected-team {
-  outline: 3px solid yellow;
-  box-shadow: 0 0 10px yellow;
+  outline: 3px solid red;
+  box-shadow: 0 0 10px red;
 }
 .match-card {
   background: white;
@@ -236,7 +236,7 @@ h1 {
 .Rplayer-btn.selected,
 .rest-btn.selected {
   outline: 0.5rem solid red;
-  background: white !important;
+  background: #9E1883 !important;
   color: black;
   box-shadow: 0 0 0.625rem #4caf50;
   animation: borderPulse 2s ease-in-out infinite;
@@ -244,7 +244,7 @@ h1 {
 @keyframes borderPulse {
   0%, 100% {
     box-shadow: 0 0 0.25rem #4caf50, 0 0 0.5rem #4caf50;
-    outline-color: #4caf50;
+    outline-color: #B02E2E;
   }
   50% {
     box-shadow: 0 0 1rem #4caf50, 0 0 1.5rem #4caf50;
