@@ -114,7 +114,7 @@ function updatePlayerList() {
       <th>No</th>
       <th></th>
       <th>Name</th>
-      <th>P/R/th>
+      <th>P/R</th>
       <th>Del</th>
     </tr>
   `;
