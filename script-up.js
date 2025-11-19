@@ -1232,11 +1232,11 @@ function makeTeamButton(label, teamSide, gameIndex, data, index) {
   return btn;
 }
 function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
+  // ✅ For desktop drag
   const drop = !movingPlayer && e.dataTransfer
     ? JSON.parse(e.dataTransfer.getData('text/plain'))
     : { type: 'rest', player: movingPlayer };
   if (drop.type !== 'rest' || !drop.player) return;
-
   const teamKey = teamSide === 'L' ? 'pair1' : 'pair2';
   const restIndex = data.resting.indexOf(drop.player);
   if (restIndex === -1) return;
@@ -1244,45 +1244,43 @@ function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, 
   const baseNewPlayer = drop.player.replace(/#\d+$/, '');
   const oldPlayer = data.games[gameIndex][teamKey][playerIndex];
 
-  // Move new rest player to the team
   data.games[gameIndex][teamKey][playerIndex] = baseNewPlayer;
 
-  const { restCount, playedCount } = schedulerState;
+  const { restCount } = schedulerState;
 
-  // 1️⃣ HANDLE PLAYER WHO WAS IN THIS SLOT BEFORE (moving to rest)
+  // ✅ Update PlayedCount map if not already initialized
+  if (!schedulerState.PlayedCount) {
+    schedulerState.PlayedCount = new Map(allPlayers.map(p => [p.name, 0]));
+  }
+
+  // ✅ Update PlayedCount
   if (oldPlayer && oldPlayer !== '(Empty)') {
-
     const cleanOld = oldPlayer.replace(/#\d+$/, '');
 
-    // Rest +1
-    const newRest = (restCount.get(cleanOld) || 0) + 1;
-    restCount.set(cleanOld, newRest);
+    // Increment old player's rest (existing logic)
+    const newCount = (restCount.get(cleanOld) || 0) + 1;
+    restCount.set(cleanOld, newCount);
+    data.resting[restIndex] = `${cleanOld}#${newCount}`;
 
-    // Played -1 (but not negative)
-    const oldPlayed = Math.max((playedCount.get(cleanOld) || 0) - 1, 0);
-    playedCount.set(cleanOld, oldPlayed);
-
-    // Put this outgoing player into rest list
-    data.resting[restIndex] = `${cleanOld}#${newRest}`;
+    // ✅ Decrement PlayedCount for old player
+    const prevPlayed = schedulerState.PlayedCount.get(cleanOld) || 0;
+    schedulerState.PlayedCount.set(cleanOld, Math.max(prevPlayed - 1, 0));
 
   } else {
-    // If slot was empty: remove dropped player from rest list
     data.resting[restIndex] = null;
   }
 
-  // 2️⃣ HANDLE NEW PLAYER (moving from rest to playing)
+  // ✅ Update new player's rest count (existing logic)
   restCount.set(baseNewPlayer, Math.max((restCount.get(baseNewPlayer) || 0) - 1, 0));
 
-  playedCount.set(
-    baseNewPlayer,
-    (playedCount.get(baseNewPlayer) || 0) + 1
-  );
+  // ✅ Increment PlayedCount for the new player
+  const prevPlayedNew = schedulerState.PlayedCount.get(baseNewPlayer) || 0;
+  schedulerState.PlayedCount.set(baseNewPlayer, prevPlayedNew + 1);
 
-  // Clean nulls
   data.resting = data.resting.filter(p => p && p !== '(Empty)');
-
   showRound(index);
 }
+
 function handleDropBetweenTeams(e, teamSide, gameIndex, playerIndex, data, index, src) {
   // src contains info about the player you selected first
   const { teamSide: fromTeamSide, gameIndex: fromGameIndex, playerIndex: fromPlayerIndex, playerName: player } = src;
