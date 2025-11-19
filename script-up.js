@@ -113,7 +113,7 @@ function updatePlayerList() {
       <th>No</th>
       <th></th>
       <th>Name</th>
-      <th>M/F</th>
+      <th>P/R/th>
       <th>Del</th>
     </tr>
   `;
@@ -123,47 +123,56 @@ function updatePlayerList() {
     if (!p.active) row.classList.add('inactive');
 
     row.innerHTML = `
+      <!-- No. -->
       <td class="no-col" style="text-align:center; font-weight:bold;">${i + 1}</td>
 
+      <!-- Active checkbox -->
       <td style="text-align:center;">
         <input type="checkbox" ${p.active ? 'checked' : ''} 
           onchange="editPlayer(${i}, 'active', this.checked)">
       </td>
 
+      <!-- Name -->
       <td class="Player-cell">
         <input type="text" value="${p.name}"
            ${!p.active ? 'disabled' : ''} 
-           onchange="editPlayer(${i}, 'name', this.value)">
-
-        <span class="games-played" id="games_${i}"></span>
+           onchange="editPlayer(${i}, 'name', this.value)">       
       </td>
 
-      <td class="gender-cell">
-        <label class="gender-btn male">
-          <input type="radio" name="gender-${i}" value="Male"
-            ${p.gender === 'Male' ? 'checked' : ''}
-            onchange="editPlayer(${i}, 'gender', 'Male')">
-          <span>M</span>
-        </label>
-        <label class="gender-btn female">
-          <input type="radio" name="gender-${i}" value="Female"
-            ${p.gender === 'Female' ? 'checked' : ''}
-            onchange="editPlayer(${i}, 'gender', 'Female')">
-          <span>F</span>
-        </label>
+      <!-- Stats: Played / Rest -->
+      <td class="stat-cell">
+        <span class="played-count" id="played_${i}"></span>
+        <span class="rest-count" id="rest_${i}"></span>
       </td>
 
+      <!-- Delete button -->
       <td style="text-align:center;">
         <button class="tbdelete-btn" onclick="deletePlayer(${i})">&times;</button>
       </td>
     `;
 
-    // 🔥 FIX: restCount lookup by NAME
+    // 🔥 Games-played circle
     const gamesElem = row.querySelector(`#games_${i}`);
     if (gamesElem) {
       const restValue = schedulerState.restCount.get(p.name) || 0;
       gamesElem.textContent = restValue;
       gamesElem.style.backgroundColor = getColorForValue(restValue);
+    }
+
+    // 🔥 Stats: Played / Rest with dynamic colors
+    const playedElem = row.querySelector(`#played_${i}`);
+    const restElem = row.querySelector(`#rest_${i}`);
+
+    if (playedElem) {
+      const playedValue = schedulerState.PlayedCount.get(p.name) || 0;
+      playedElem.textContent = playedValue;
+      playedElem.style.backgroundColor = getPlayedColor(playedValue);
+    }
+
+    if (restElem) {
+      const restValue = schedulerState.restCount.get(p.name) || 0;
+      restElem.textContent = restValue;
+      restElem.style.backgroundColor = getRestColor(restValue);
     }
 
     table.appendChild(row);
@@ -172,11 +181,25 @@ function updatePlayerList() {
   enableTouchRowReorder();
 }
 
-function getColorForValue(value) {
+function getPlayedColor(value) {
   if (!value || value <= 0) return "#e0e0e0";
-  const hue = (value * 3.6) % 360;
+
+  // Map 1–20 → hue 0–300 for clear distinction
+  const maxValue = 20;
+  const hue = Math.min(value, maxValue) * (300 / maxValue); 
   return `hsl(${hue}, 70%, 55%)`;
 }
+
+function getRestColor(value) {
+  if (!value || value <= 0) return "#e0e0e0";
+
+  const maxValue = 20;
+  // Offset 180° from Played so colors differ
+  const hue = (Math.min(value, maxValue) * (300 / maxValue) + 180) % 360;
+  return `hsl(${hue}, 70%, 55%)`;
+}
+
+
 
 
 
