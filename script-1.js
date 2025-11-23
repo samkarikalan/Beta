@@ -87,8 +87,21 @@ function addPlayer() {
    EDIT PLAYER INFO
 ========================= */
 function editPlayer(i, field, val) {
-  schedulerState.allPlayers[i][field] = (field === 'active') ? val : val.trim();
-   schedulerState.activeplayers = schedulerState.allPlayers
+  const player = schedulerState.allPlayers[i];
+
+  // Normal update
+  if (field === 'active') {
+    player.active = !!val;                         // make sure it's boolean
+    if (val) {                                     // ←←← THIS IS THE ONLY NEW PART
+      const highest = Math.max(0, ...schedulerState.allPlayers.map(p => p.turnOrder || 0));
+      player.turnOrder = highest + 1;              // put him at the very end of the line
+    }
+  } else {
+    player[field] = val.trim();
+  }
+
+  // Your two existing lines — unchanged
+  schedulerState.activeplayers = schedulerState.allPlayers
     .filter(p => p.active)
     .map(p => p.name)
     .reverse();
