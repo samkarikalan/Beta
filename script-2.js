@@ -651,7 +651,57 @@ function makeTeamButton(label, teamSide, gameIndex, data, index) {
   });
   return btn;
 }
-function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
+
+function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, roundIndex, movingPlayer = null) {
+
+  // Extract drag source
+  const drop = !movingPlayer && e.dataTransfer
+    ? JSON.parse(e.dataTransfer.getData('text/plain'))
+    : { type: 'rest', player: movingPlayer };
+
+  if (drop.type !== 'rest' || !drop.player) return;
+
+  const teamKey = teamSide === 'L' ? 'pair1' : 'pair2';
+
+  // Base clean player name
+  const newPlayer = drop.player.replace(/#\d+$/, '');
+  const oldPlayer = data.games[gameIndex][teamKey][playerIndex];
+
+  // Find position in resting list
+  const restIndex = data.resting.findIndex(p => p && p.startsWith(newPlayer));
+  if (restIndex === -1) return;
+
+  // Insert new player into team
+  data.games[gameIndex][teamKey][playerIndex] = newPlayer;
+
+  // --------------------------------
+  // 🔥 REST LIST REBUILD LOGIC ONLY
+  // --------------------------------
+
+  // Remove the new player from resting
+  data.resting.splice(restIndex, 1);
+
+  // If there was an old player, add them back and recalc rest count
+  if (oldPlayer && oldPlayer !== '(Empty)') {
+
+    // Count how many existing entries match old player
+    const existingCount = data.resting.filter(p => p.startsWith(oldPlayer)).length;
+
+    // Add back with incremented count (# starts from 1)
+    data.resting.push(`${oldPlayer}#${existingCount + 1}`);
+  }
+
+  // Cleanup empty entries
+  data.resting = data.resting.filter(Boolean);
+
+
+  // --------------------------------
+  // 🔄 Refresh UI
+  // --------------------------------
+  showRound(roundIndex);
+}
+
+function handleDropRestToTeam2(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
   // ✅ For desktop drag
   const drop = !movingPlayer && e.dataTransfer
     ? JSON.parse(e.dataTransfer.getData('text/plain'))
