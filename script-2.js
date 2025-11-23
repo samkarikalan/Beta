@@ -27,11 +27,14 @@ function AischedulerNextRound(schedulerState) {
     let possiblePlayers = [...fixedPairsList, ...freePlayers.map(p => [p])];
 
     possiblePlayers.sort((u1, u2) => {
-      const count1 = u1.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
-      const count2 = u2.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
-      return count1 - count2;
+    const count1 = u1.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    const count2 = u2.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    if (count1 !== count2) return count1 - count2
+    // NEW: whoever came back from rest most recently = highest turnOrder = plays last
+    const order1 = Math.max(...u1.map(name => schedulerState.allPlayers.find(p => p.name === name)?.turnOrder || 0));
+    const order2 = Math.max(...u2.map(name => schedulerState.allPlayers.find(p => p.name === name)?.turnOrder || 0));
+    return order1 - order2;
     });
-
     for (const unit of possiblePlayers) {
       if (resting.length + unit.length <= numResting) {
         resting.push(...unit);
