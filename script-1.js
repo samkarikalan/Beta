@@ -186,27 +186,23 @@ function updatePlayerList() {
 
   enableTouchRowReorder();
 }
-
 function getPlayedColor(value) {
   if (!value || value <= 0) return "#e0e0e0";
 
-  const maxValue = 20;
-  const step = 360 / maxValue;      // 360° divided by 20 numbers → 18° per step
-  const hue = (Math.min(value, maxValue) - 1) * step; // subtract 1 so 1 → 0°, 2 → 18°, etc.
+  const plays = Math.min(value, 20);
+  const hue = (plays - 1) * 36; // 36° steps → 10 distinct, bold colors: 0°, 36°, 72°, ..., 684° → wraps cleanly
 
-  return `hsl(${hue}, 70%, 55%)`;
+  return `hsl(${hue}, 92%, 58%)`;
 }
 
 function getRestColor(value) {
   if (!value || value <= 0) return "#e0e0e0";
 
-  const maxValue = 20;
-  const step = 360 / maxValue;
-  const hue = ((Math.min(value, maxValue) - 1) * step + 180) % 360; // offset 180° for contrast
+  const rests = Math.min(value, 20);
+  const hue = ((rests - 1) * 36 + 180) % 360; // +180° offset = perfect opposite color
 
-  return `hsl(${hue}, 70%, 55%)`;
+  return `hsl(${hue}, 88%, 62%)`;
 }
-
 
 
 
