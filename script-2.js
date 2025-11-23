@@ -652,9 +652,9 @@ function makeTeamButton(label, teamSide, gameIndex, data, index) {
   return btn;
 }
 
-function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, roundIndex, movingPlayer = null) {
-
-  // Extract drag source
+function handleDropRestToTeam(
+  e, teamSide, gameIndex, playerIndex, data, roundIndex, movingPlayer = null
+) {
   const drop = !movingPlayer && e.dataTransfer
     ? JSON.parse(e.dataTransfer.getData('text/plain'))
     : { type: 'rest', player: movingPlayer };
@@ -663,44 +663,34 @@ function handleDropRestToTeam(e, teamSide, gameIndex, playerIndex, data, roundIn
 
   const teamKey = teamSide === 'L' ? 'pair1' : 'pair2';
 
-  // Base clean player name
   const newPlayer = drop.player.replace(/#\d+$/, '');
   const oldPlayer = data.games[gameIndex][teamKey][playerIndex];
 
-  // Find position in resting list
-  const restIndex = data.resting.findIndex(p => p && p.startsWith(newPlayer));
-  if (restIndex === -1) return;
+  // Remove the new player from data.resting
+  data.resting = data.resting.filter(p => !p.startsWith(newPlayer));
 
   // Insert new player into team
   data.games[gameIndex][teamKey][playerIndex] = newPlayer;
 
-  // --------------------------------
-  // 🔥 REST LIST REBUILD LOGIC ONLY
-  // --------------------------------
+  // ---------------------------------------------
+  // 🔥 schedulerState.restCount is READ-ONLY
+  // ---------------------------------------------
+  const { restCount } = schedulerState;
 
-  // Remove the new player from resting
-  data.resting.splice(restIndex, 1);
-
-  // If there was an old player, add them back and recalc rest count
   if (oldPlayer && oldPlayer !== '(Empty)') {
 
-    // Count how many existing entries match old player
-    const existingCount = data.resting.filter(p => p.startsWith(oldPlayer)).length;
+    // Read only value
+    const stored = restCount.get(oldPlayer) || 0;
 
-    // Add back with incremented count (# starts from 1)
-    data.resting.push(`${oldPlayer}#${existingCount + 1}`);
+    // UI number = scheduler stored + 1
+    const nextNum = stored + 1;
+
+    // Add to data.resting
+    data.resting.push(`${oldPlayer}#${nextNum}`);
   }
 
-  // Cleanup empty entries
-  data.resting = data.resting.filter(Boolean);
-
-
-  // --------------------------------
-  // 🔄 Refresh UI
-  // --------------------------------
   showRound(roundIndex);
 }
-
 function handleDropRestToTeam2(e, teamSide, gameIndex, playerIndex, data, index, movingPlayer = null) {
   // ✅ For desktop drag
   const drop = !movingPlayer && e.dataTransfer
