@@ -40,49 +40,78 @@ function hideImportModal() {
    ADD PLAYERS FROM TEXT
 ========================= */
 function addPlayersFromText() {
-  const textarea = document.getElementById('players-textarea');
-const text = textarea.value.trim();
-if (!text) return;
+const textarea = document.getElementById('players-textarea');
+  const text = textarea.value.trim();
+  if (!text) return;
 
-const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
-const defaultGender = genderSelect ? genderSelect.value : "Male";
+  const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
+  const defaultGender = genderSelect ? genderSelect.value : "Male";
 
-const lines = text.split(/\r?\n/);
-let startParsing = false;
+  const lines = text.split(/\r?\n/);
+  let startParsing = false;
 
-lines.forEach(line => {
-  const trimmed = line.trim();
+  lines.forEach(line => {
+    let trimmed = line.trim();
 
-  // Stop conditions
-  if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i)) {
-    startParsing = false;  // Stop adding players after this line
-    return;
-  }
+    // === STOP CONDITIONS ===
+    if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i)) {
+      startParsing = false;
+      return;
+    }
 
-  // Start trigger: look for "Confirm" anywhere in the line
-  if (trimmed.match(/confirm/i)) {
-    startParsing = true;
-    return; // Don't process this line as a player
-  }
+    // === START PARSING AFTER "CONFIRM" ===
+    if (trimmed.match(/confirm/i)) {
+      startParsing = true;
+      return;
+    }
 
-  // Only parse player lines if we're in the "confirmed" section
-  if (!startParsing) return;
+    if (!startParsing) return;
 
-  // Skip empty lines or obvious headers
-  if (!trimmed || trimmed.includes('Name') || trimmed.includes('Player')) return;
+    // Skip empty or header lines
+    if (!trimmed || /name|player|guest/i.test(trimmed) && trimmed.length < 30) return;
 
-  // Now try to extract name and optional gender
-  const [nameRaw, genderRaw] = trimmed.split(',').map(s => s?.trim());
+    // === CLEAN THE NAME: Remove Guest1(John), +1 (Sarah), etc. ===
+    let cleanName = trimmed;
 
-  if (!nameRaw) return; // skip invalid lines
+    // Match patterns like: Guest1(John), Guest2 (Sarah), +1 (Mike), (Alex) at start/end
+    cleanName = cleanName.replace(/^(Guest\d*|Guest|\+\d*|\d+)\s*\([^)]*\)\s*/i, '');     // Guest1(John) → John
+    cleanName = cleanName.replace(/\s*\([^)]*\)\s*$/, '');                                 // John (guest) → John
+    cleanName = cleanName.replace(/\s*\[.*?\]\s*/g, '');                                   // [VIP] John → John
+    cleanName = cleanName.replace(/^\d+\.\s*/, '');                                        // 1. John → John
+    cleanName = cleanName.trim();
 
-  const name = nameRaw;
-  const gender = genderRaw || defaultGender;
+    if (!cleanName) return; // nothing left after cleaning
 
-  // Add player if not already exists (case-insensitive check)
-  const exists = schedulerState.allPlayers.some(
-    p => p.name.toLowerCase() === name.toLowerCase()
-  );
+    // === SPLIT NAME AND GENDER (if comma exists) ===
+    let name = cleanName;
+    let gender = defaultGender;
+
+    if (cleanName.includes(',')) {
+      const parts = cleanName.split(',').map(s => s.trim());
+      name = parts[0];
+      if (parts[1] && ['male','female','m','f'].includes(parts[1].toLowerCase())) {
+        gender = parts[1].toLowerCase().startsWith('f') ? 'Female' : 'Male';
+      }
+    }
+
+    // Final sanity check
+    if (!name || name.length < 2 || name.length > 40) return;
+
+    // === ADD PLAYER IF NOT EXISTS (case-insensitive) ===
+    const normalized = name.toLowerCase();
+    const exists = schedulerState.allPlayers.some(p => 
+      p.name.toLowerCase() === normalized
+    );
+
+    if (!exists) {
+      schedulerState.allPlayers.push({
+        name: name,
+        gender: gender,
+        active: true,
+        turnOrder: schedulerState.allPlayers.length // optional: maintain order
+      });
+    }
+  });
 
   if (!exists) {
     schedulerState.allPlayers.push({
