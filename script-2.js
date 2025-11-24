@@ -55,7 +55,7 @@ function AischedulerNextRound(schedulerState) {
     return { rests, turnOrder };
   };
   
-  const sortedPlayers = [...activePlayers].sort((a, b) => {
+  const sortedPlayers = [...activeplayers].sort((a, b) => {
   const pa = getPriority(a);
   const pb = getPriority(b);
 
