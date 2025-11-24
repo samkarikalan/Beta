@@ -321,7 +321,7 @@ function updateFixedPairSelectors() {
   sel1.innerHTML = '<option value="">-- Select Player 1 --</option>';
   sel2.innerHTML = '<option value="">-- Select Player 2 --</option>';
   // Only active players
-  schedulerState.activeplayers.forEach(p => {
+  schedulerState.activeplayers.slice().reverse().forEach(p => {
     if (!pairedPlayers.has(p)) {
       const option1 = document.createElement('option');
       const option2 = document.createElement('option');
