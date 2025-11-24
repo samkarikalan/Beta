@@ -40,62 +40,71 @@ function hideImportModal() {
    ADD PLAYERS FROM TEXT
 ========================= */
 function addPlayersFromText() {
-  const textarea = document.getElementById('players-textarea');
-  const text = textarea.value.trim();
+  const text = document.getElementById('players-textarea').value.trim();
   if (!text) return;
 
   const defaultGender = document.querySelector('input[name="genderSelect"]:checked')?.value || "Male";
-  let startParsing = false;
+  const lines = text.split(/\r?\n/);
 
-  text.split(/\r?\n/).forEach(line => {
-    const t = line.trim();
-    if (!t) return;
+  // Stop/start markers (case insensitive)
+  const startMarkers = [/confirm players/i];
+  const stopMarkers = [/court full/i, /wl/i, /waitlist/i, /late cancel/i, /cancelled/i, /reserve/i, /bench/i, /extras/i, /backup/i];
 
-    // Stop
-    if (/court\s+full|wl\s*\(|late/i.test(t)) {
-      startParsing = false;
-      return;
+  let insideBlock = false;
+  const extractedNames = [];
+
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+
+    if (!line) continue; // skip blank lines
+    if (/^\d+$/.test(line)) continue; // skip pure numbers
+
+    // Check start markers
+    if (!insideBlock && startMarkers.some(re => re.test(line))) {
+      insideBlock = true;
+      continue; // skip marker line
     }
 
-    // Start after "Confirm"
-    if (/confirm/i.test(t)) {
-      startParsing = true;
-      return;
+    // Check stop markers
+    if (insideBlock && stopMarkers.some(re => re.test(line))) {
+      insideBlock = false;
+      continue;
     }
 
-    // Auto-start if no Confirm but looks like a name
-    if (!startParsing && /^[A-Za-z]/.test(t) && t.length > 1) {
-      startParsing = true;
+    // Determine if line is a valid name
+    if (insideBlock || (!insideBlock && !line.match(/^(\d+\.?|\d+\)|-)\s*$/))) {
+      // Remove numbering like "1.", "2)", "- " at start
+      line = line.replace(/^(\d+\.?|\d+\)|-\s*)\s*/, '');
+
+      if (!line) continue;
+
+      // If parentheses exist, extract content inside
+      const parenMatch = line.match(/\(([^)]+)\)/);
+      if (parenMatch) {
+        line = parenMatch[1].trim();
+      }
+
+      // Check duplicates (case-insensitive)
+      if (line && !schedulerState.allPlayers.some(p => p.name.toLowerCase() === line.toLowerCase())) {
+        extractedNames.push({ name: line, gender: defaultGender, active: true });
+      }
     }
+  }
 
-    if (!startParsing) return;
+  // Add extracted names to schedulerState.allPlayers
+  schedulerState.allPlayers.push(...extractedNames);
 
-    // Clean
-    let name = t
-      .replace(/^\d+\.\s*/, '')           // 1. 
-      .replace(/^[-•*+>]\s*/, '')         // bullets
-      .replace(/guest\s*\(?([^)]*)\)?/gi, '$1')  // Guest(Name) → Name
-      .replace(/,.*/g, '')                // remove , F or anything after comma
-      .trim();
+  // Update active players
+  schedulerState.activeplayers = schedulerState.allPlayers
+    .filter(p => p.active)
+    .map(p => p.name)
+    .reverse();
 
-    if (name.length < 2 || name.length > 50) return;
-
-    // Add player (no duplicate)
-    if (!schedulerState.allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      schedulerState.allPlayers.push({
-        name: name,
-        gender: defaultGender,
-        active: true,
-        turnOrder: schedulerState.allPlayers.length
-      });
-    }
-  });
-
-  schedulerState.activeplayers = schedulerState.allPlayers.filter(p => p.active).map(p => p.name);
   updatePlayerList();
   updateFixedPairSelectors();
   hideImportModal();
 }
+
 /* =========================
    ADD SINGLE PLAYER
 ========================= */
