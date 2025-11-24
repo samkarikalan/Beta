@@ -18,55 +18,83 @@ function AischedulerNextRound(schedulerState) {
   const fixedPairPlayers = new Set(fixedPairs.flat());
   let freePlayers = activeplayers.filter(p => !fixedPairPlayers.has(p));
 
-  let resting = [];
-  let playing = [];
+  // ... top of function (resting and playing already declared as let)
+let resting = [];
+let playing = [];
 
-  // 1️⃣ Select resting and playing players
-  if (fixedPairs.length > 0 && numResting >= 2) {
-    const fixedPairsList = fixedPairs.map(([a, b]) => [a, b]);
-    let possiblePlayers = [...fixedPairsList, ...freePlayers.map(p => [p])];
+// 1. Select resting and playing players
+if (fixedPairs.length > 0 && numResting >= 2) {
+  const fixedPairsList = fixedPairs.map(([a, b]) => [a, b]);
+  let possibleUnits = [
+    ...fixedPairsList,
+    ...freePlayers.map(p => [p])
+  ];
 
-    possiblePlayers.sort((u1, u2) => {
-    const count1 = u1.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
-    const count2 = u2.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
-    if (count1 !== count2) return count1 - count2
-    // NEW: whoever came back from rest most recently = highest turnOrder = plays last
-    const order1 = Math.max(...u1.map(name => schedulerState.allPlayers.find(p => p.name === name)?.turnOrder || 0));
-    const order2 = Math.max(...u2.map(name => schedulerState.allPlayers.find(p => p.name === name)?.turnOrder || 0));
-    return order1 - order2;
-    });
-    for (const unit of possiblePlayers) {
-      if (resting.length + unit.length <= numResting) {
-        resting.push(...unit);
-      }
-      if (resting.length >= numResting) break;
+  // Sort: prefer resting units with fewest total rests
+  // Then: units with lower max turnOrder (rested longer ago) rest first
+  possibleUnits.sort((u1, u2) => {
+    const restSum1 = u1.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    const restSum2 = u2.reduce((sum, p) => sum + (restCount.get(p) || 0), 0);
+    if (restSum1 !== restSum2) return restSum1 - restSum2;
+
+    const maxOrder1 = Math.max(...u1.map(name =>
+      schedulerState.allPlayers.find(p => p.name === name)?.turnOrder ?? 0
+    ));
+    const maxOrder2 = Math.max(...u2.map(name =>
+      schedulerState.allPlayers.find(p => p.name === name)?.turnOrder ?? 0
+    ));
+
+    return maxOrder1 - maxOrder2; // lower turnOrder = rested longer ago = rest now
+  });
+
+  // Greedily assign whole units to resting
+  for (const unit of possibleUnits) {
+    if (resting.length + unit.length <= numResting) {
+      resting.push(...unit);
     }
+    if (resting.length >= numResting) break;
+  }
 
-    playing = activeplayers.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
+  // Everyone else plays (up to required number)
+  playing = activeplayers
+    .filter(p => !resting.includes(p))
+    .slice(0, numPlayersPerRound);
 
-    // Keep fixed pairs together in playing
-    const playingPairs = fixedPairsList.filter(([a, b]) => playing.includes(a) && playing.includes(b));
-    const playingSingles = playing.filter(p => !fixedPairPlayers.has(p));
-    playing = [...playingPairs.flat(), ...playingSingles];
-  } else {
-      const getPriority = (name: string) => {
+  // Optional: preserve fixed pair order in playing list (not required, but nice)
+  const playingSet = new Set(playing);
+  const intactFixedPairs = fixedPairsList.filter(([a, b]) =>
+    playingSet.has(a) && playingSet.has(b)
+  );
+  const playingFromPairs = intactFixedPairs.flat();
+  const playingSingles = playing.filter(p => !fixedPairPlayers.has(p));
+  playing = [...playingFromPairs, ...playingSingles];
+
+} else {
+  // NO FIXED PAIRS or not enough resting spots → treat everyone individually
+
+  // Helper to get priority: fewer rests first, then most recently played rests last
+  const getPriority = (name) => {
     const rests = restCount.get(name) || 0;
     const turnOrder = schedulerState.allPlayers.find(p => p.name === name)?.turnOrder ?? -Infinity;
     return { rests, turnOrder };
   };
-  
+
   const sortedPlayers = [...activeplayers].sort((a, b) => {
-  const pa = getPriority(a);
-  const pb = getPriority(b);
+    const pa = getPriority(a);
+    const pb = getPriority(b);
 
-  if (pa.rests !== pb.rests) return pa.rests - pb.rests;
-  return pb.turnOrder - pa.turnOrder; // most recent return rests last
-});
+    if (pa.rests !== pb.rests) return pa.rests - pb.rests;     // fewer rests = rest now
+    return pb.turnOrder - pa.turnOrder; // higher turnOrder = returned more recently = play now
+  });
 
-const resting = sortedPlayers.slice(0, numResting);
-    playing = activeplayers.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
-  }
+  // Assign resting players (do NOT redeclare resting!)
+  resting.push(...sortedPlayers.slice(0, numResting));
 
+  // Remaining players go to playing
+  playing = activeplayers
+    .filter(p => !resting.includes(p))
+    .slice(0, numPlayersPerRound);
+}
   // 2️⃣ Prepare pairs
   const playingSet = new Set(playing);
   let fixedPairsThisRound = [];
