@@ -44,88 +44,54 @@ function addPlayersFromText() {
   const text = textarea.value.trim();
   if (!text) return;
 
-  const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
-  const defaultGender = genderSelect ? genderSelect.value : "Male";
-
-  const lines = text.split(/\r?\n/);
+  const defaultGender = document.querySelector('input[name="genderSelect"]:checked')?.value || "Male";
   let startParsing = false;
 
-  lines.forEach(line => {
-    let trimmed = line.trim();
-    if (!trimmed) return;
+  text.split(/\r?\n/).forEach(line => {
+    const t = line.trim();
+    if (!t) return;
 
-    // Stop parsing at these sections
-    if (/court\s*full|late|no\s*more|wl\s*\(/i.test(trimmed)) {
+    // Stop
+    if (/court\s+full|wl\s*\(|late/i.test(t)) {
       startParsing = false;
       return;
     }
 
-    // Start parsing from the NEXT line after seeing "Confirm"
-    if (/confirm/i.test(trimmed)) {
+    // Start after "Confirm"
+    if (/confirm/i.test(t)) {
       startParsing = true;
       return;
     }
 
-    // If not parsing yet, skip (but allow direct name lists)
-    if (!startParsing) {
-      // Auto-start if line looks like a real name (not a header)
-      if (/^[A-Za-z\s.'\-]{2,30}$/.test(trimmed) || /^\d+\.\s*[A-Za-z]/.test(trimmed)) {
-        startParsing = true;
-      } else {
-        return;
-      }
+    // Auto-start if no Confirm but looks like a name
+    if (!startParsing && /^[A-Za-z]/.test(t) && t.length > 1) {
+      startParsing = true;
     }
 
-    // Clean name: only remove "Guest(Name)", "guest name", etc. → keep real name
-    let cleanName = trimmed
-      .replace(/^\d+\.\s*/, '')                    // 1. John → John
-      .replace(/^[-•*+]\s*/, '')                   // - John → John
-      .replace(/guest\s*\(?\)?\s*/gi, '')          // Guest(John), Guest John → John
-      .replace(/\(guest\)\s*/gi, '')               // John (guest) → John
-      .replace(/^\(|\)$/, '')                      // (John) → John
+    if (!startParsing) return;
+
+    // Clean
+    let name = t
+      .replace(/^\d+\.\s*/, '')           // 1. 
+      .replace(/^[-•*+>]\s*/, '')         // bullets
+      .replace(/guest\s*\(?([^)]*)\)?/gi, '$1')  // Guest(Name) → Name
+      .replace(/,.*/g, '')                // remove , F or anything after comma
       .trim();
 
-    // Final cleanup: extract only the actual name if there's junk
-    const nameMatch = cleanName.match(/^([A-Za-z\s.'\-]+)/);
-    if (!nameMatch) return;
-    cleanName = nameMatch[1].trim();
+    if (name.length < 2 || name.length > 50) return;
 
-    if (cleanName.length < 2 || cleanName.length > 50) return;
-
-    // Gender detection from comma: "John, F" or "Priya, female"
-    let gender = defaultGender;
-    if (cleanName.includes(',')) {
-      const parts = cleanName.split(',').map(p => p.trim());
-      cleanName = parts[0];
-      const g = parts[1];
-      if (g && /^(f|female)$/i.test(g)) gender = "Female";
-      else if (g && /^(m|male)$/i.test(g)) gender = "Male";
-    }
-
-    // Final name validation
-    if (!/^[A-Za-z\s.'\-]+$/.test(cleanName)) return;
-
-    // Add player if not already exists
-    const normalized = cleanName.toLowerCase();
-    const exists = schedulerState.allPlayers.some(p => 
-      p.name.toLowerCase() === normalized
-    );
-
-    if (!exists) {
+    // Add player (no duplicate)
+    if (!schedulerState.allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
       schedulerState.allPlayers.push({
-        name: cleanName,
-        gender: gender,
+        name: name,
+        gender: defaultGender,
         active: true,
         turnOrder: schedulerState.allPlayers.length
       });
     }
   });
 
-  // Update UI
-  schedulerState.activeplayers = schedulerState.allPlayers
-    .filter(p => p.active)
-    .map(p => p.name);
-
+  schedulerState.activeplayers = schedulerState.allPlayers.filter(p => p.active).map(p => p.name);
   updatePlayerList();
   updateFixedPairSelectors();
   hideImportModal();
