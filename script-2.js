@@ -49,10 +49,21 @@ function AischedulerNextRound(schedulerState) {
     const playingSingles = playing.filter(p => !fixedPairPlayers.has(p));
     playing = [...playingPairs.flat(), ...playingSingles];
   } else {
-    let sortedPlayers = [...activeplayers].sort((a, b) =>
-      (restCount.get(a) || 0) - (restCount.get(b) || 0)
-    );
-    resting = sortedPlayers.slice(0, numResting);
+      const getPriority = (name: string) => {
+    const rests = restCount.get(name) || 0;
+    const turnOrder = schedulerState.allPlayers.find(p => p.name === name)?.turnOrder ?? -Infinity;
+    return { rests, turnOrder };
+  };
+  
+  const sortedPlayers = [...activePlayers].sort((a, b) => {
+  const pa = getPriority(a);
+  const pb = getPriority(b);
+
+  if (pa.rests !== pb.rests) return pa.rests - pb.rests;
+  return pb.turnOrder - pa.turnOrder; // most recent return rests last
+});
+
+const resting = sortedPlayers.slice(0, numResting);
     playing = activeplayers.filter(p => !resting.includes(p)).slice(0, numPlayersPerRound);
   }
 
