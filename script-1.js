@@ -40,86 +40,93 @@ function hideImportModal() {
    ADD PLAYERS FROM TEXT
 ========================= */
 function addPlayersFromText() {
-    const textarea = document.getElementById('players-textarea');
-    const text = textarea.value.trim();
-    if (!text) return;
-    const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
-    const defaultGender = genderSelect ? genderSelect.value : "Male";
+  const textarea = document.getElementById('players-textarea');
+  const text = textarea.value.trim();
+  if (!text) return;
 
-    const lines = text.split(/\r?\n/);
-    let startParsing = false;
+  const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
+  const defaultGender = genderSelect ? genderSelect.value : "Male";
 
-    lines.forEach(line => {
+  const lines = text.split(/\r?\n/);
+  let startParsing = false;
+
+  lines.forEach(line => {
+    const original = line;
     let trimmed = line.trim();
 
-    // === STOP CONDITIONS ===
-    if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i)) {
+    // === 1. Stop parsing after these lines ===
+    if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i) || trimmed.match(/no more/i)) {
       startParsing = false;
       return;
     }
 
-    // === START PARSING AFTER "CONFIRM" ===
+    // === 2. Start parsing when we see "Confirm" (case-insensitive) ===
     if (trimmed.match(/confirm/i)) {
       startParsing = true;
-      return;
+      return; // don't treat "Confirmed Players" as a name
     }
 
+    // === 3. If not in confirmed section yet → skip this line ===
     if (!startParsing) return;
 
-    // Skip empty or header lines
-    if (!trimmed || /name|player|guest/i.test(trimmed) && trimmed.length < 30) return;
+    // === 4. Skip truly empty or obvious section headers ===
+    if (!trimmed) return;
+    if (trimmed.length < 2) return;
+    if (/^(confirmed?|players?|waiting|list|name|#)/i.test(trimmed) && trimmed.length < 40) return;
 
-    // === CLEAN THE NAME: Remove Guest1(John), +1 (Sarah), etc. ===
+    // === 5. CLEAN THE NAME (remove junk like Guest1(John), +1 (Sarah), etc.) ===
     let cleanName = trimmed;
 
-    // Match patterns like: Guest1(John), Guest2 (Sarah), +1 (Mike), (Alex) at start/end
-    cleanName = cleanName.replace(/^(Guest\d*|Guest|\+\d*|\d+)\s*\([^)]*\)\s*/i, '');     // Guest1(John) → John
-    cleanName = cleanName.replace(/\s*\([^)]*\)\s*$/, '');                                 // John (guest) → John
-    cleanName = cleanName.replace(/\s*\[.*?\]\s*/g, '');                                   // [VIP] John → John
-    cleanName = cleanName.replace(/^\d+\.\s*/, '');                                        // 1. John → John
-    cleanName = cleanName.trim();
+    // Remove: Guest1(John), Guest2 (Sarah), +1 (Mike), 3. Emma
+    cleanName = cleanName.replace(/^(Guest\d*|guest|\+\d*|\d+)\s*[\(\[][^)\]]+[\)\]]\s*/i, '');
+    cleanName = cleanName.replace(/\s*[\(\[][^)\]]+[\)\]]\s*$/g, ''); // (guest), [VIP]
+    cleanName = cleanName.replace(/^\d+\.\s*/, '');                  // 1. John →
+    cleanName = cleanName.replace(/^\s+|\s+$/g, '');                 // trim
 
-    if (!cleanName) return; // nothing left after cleaning
+    // If nothing left after cleaning → skip
+    if (!cleanName || cleanName.length < 2 || cleanName.length > 50) return;
 
-    // === SPLIT NAME AND GENDER (if comma exists) ===
+    // === 6. Extract name and gender (if comma exists) ===
     let name = cleanName;
     let gender = defaultGender;
 
     if (cleanName.includes(',')) {
-      const parts = cleanName.split(',').map(s => s.trim());
+      const parts = cleanName.split(',').map(p => p.trim());
       name = parts[0];
-      if (parts[1] && ['male','female','m','f'].includes(parts[1].toLowerCase())) {
-        gender = parts[1].toLowerCase().startsWith('f') ? 'Female' : 'Male';
-      }
+      const g = parts[1];
+      if (g && /^(f|female)$/i.test(g)) gender = "Female";
+      else if (g && /^(m|male)$/i.test(g)) gender = "Male";
     }
 
-    // Final sanity check
-    if (!name || name.length < 2 || name.length > 40) return;
+    // Final validation
+    if (!name || !/^[A-Za-z\s.'\-]+$/.test(name)) return;
 
-    // === ADD PLAYER IF NOT EXISTS (case-insensitive) ===
+    // === 7. Add player if not already exists (case-insensitive) ===
     const normalized = name.toLowerCase();
-    const exists = schedulerState.allPlayers.some(p => 
+    const exists = schedulerState.allPlayers.some(p =>
       p.name.toLowerCase() === normalized
     );
-  if (!exists) {
-    schedulerState.allPlayers.push({
-      name,
-      gender,
-      active: true,
-      turnOrder: 0  // optional: initialize
-    });
-  }
-});
 
-// Finally update active players list (reverse = newest first, or remove reverse if you want oldest first)
-schedulerState.activeplayers = schedulerState.allPlayers
-  .filter(p => p.active)
-  .map(p => p.name);
-// .reverse();  // ← remove if you want original order (oldest on top)
+    if (!exists) {
+      schedulerState.allPlayers.push({
+        name: name,
+        gender: gender,
+        active: true,
+        turnOrder: schedulerState.allPlayers.length
+      });
+    }
+  });
+
+  // === Update active players and UI ===
+  schedulerState.activeplayers = schedulerState.allPlayers
+    .filter(p => p.active)
+    .map(p => p.name);
 
   updatePlayerList();
   updateFixedPairSelectors();
   hideImportModal();
+
+  
 }
 /* =========================
    ADD SINGLE PLAYER
