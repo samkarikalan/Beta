@@ -46,55 +46,51 @@ function addPlayersFromText() {
   const defaultGender = document.querySelector('input[name="genderSelect"]:checked')?.value || "Male";
   const lines = text.split(/\r?\n/);
 
-  // Stop/start markers (case insensitive)
-  const startMarkers = [/confirm players/i];
   const stopMarkers = [/court full/i, /wl/i, /waitlist/i, /late cancel/i, /cancelled/i, /reserve/i, /bench/i, /extras/i, /backup/i];
 
-  let insideBlock = false;
+  let startIndex = 0;
+  let stopIndex = lines.length;
+
+  // Find first "Confirm" line
+  const confirmLineIndex = lines.findIndex(line => /confirm/i.test(line));
+
+  if (confirmLineIndex >= 0) {
+    startIndex = confirmLineIndex + 1;
+    // Find stop marker after Confirm
+    for (let i = startIndex; i < lines.length; i++) {
+      if (stopMarkers.some(re => re.test(lines[i]))) {
+        stopIndex = i;
+        break;
+      }
+    }
+  } else {
+    // No "Confirm" found → treat all lines as plain names
+    startIndex = 0;
+    stopIndex = lines.length;
+  }
+
   const extractedNames = [];
 
-  for (let rawLine of lines) {
-    let line = rawLine.trim();
+  for (let i = startIndex; i < stopIndex; i++) {
+    let line = lines[i].trim();
+    if (!line) continue;                 // skip blank lines
+    if (line.toLowerCase().includes("https")) continue; // skip URLs
 
-    if (!line) continue; // skip blank lines
-    if (/^\d+$/.test(line)) continue; // skip pure numbers
-
-    // Check start markers
-    if (!insideBlock && startMarkers.some(re => re.test(line))) {
-      insideBlock = true;
-      continue; // skip marker line
+    // Keep the prefix as-is (do NOT remove numbering or dash)
+    // Extract parentheses content if present
+    const parenMatch = line.match(/\(([^)]+)\)/);
+    if (parenMatch) {
+      line = parenMatch[1].trim();
     }
 
-    // Check stop markers
-    if (insideBlock && stopMarkers.some(re => re.test(line))) {
-      insideBlock = false;
-      continue;
-    }
-
-    // Determine if line is a valid name
-    if (insideBlock || (!insideBlock && !line.match(/^(\d+\.?|\d+\)|-)\s*$/))) {
-      // Remove numbering like "1.", "2)", "- " at start
-      line = line.replace(/^(\d+\.?|\d+\)|-\s*)\s*/, '');
-
-      if (!line) continue;
-
-      // If parentheses exist, extract content inside
-      const parenMatch = line.match(/\(([^)]+)\)/);
-      if (parenMatch) {
-        line = parenMatch[1].trim();
-      }
-
-      // Check duplicates (case-insensitive)
-      if (line && !schedulerState.allPlayers.some(p => p.name.toLowerCase() === line.toLowerCase())) {
-        extractedNames.push({ name: line, gender: defaultGender, active: true });
-      }
+    // Avoid duplicates (case-insensitive)
+    if (!schedulerState.allPlayers.some(p => p.name.toLowerCase() === line.toLowerCase())) {
+      extractedNames.push({ name: line, gender: defaultGender, active: true });
     }
   }
 
-  // Add extracted names to schedulerState.allPlayers
   schedulerState.allPlayers.push(...extractedNames);
 
-  // Update active players
   schedulerState.activeplayers = schedulerState.allPlayers
     .filter(p => p.active)
     .map(p => p.name)
