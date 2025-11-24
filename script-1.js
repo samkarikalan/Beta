@@ -40,24 +40,65 @@ function hideImportModal() {
    ADD PLAYERS FROM TEXT
 ========================= */
 function addPlayersFromText() {
-  const text = document.getElementById('players-textarea').value.trim();
-  if (!text) return;
-  const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
-  const defaultGender = genderSelect ? genderSelect.value : "Male";
-  const lines = text.split(/\r?\n/);
-  lines.forEach(line => {
-    const [nameRaw, genderRaw] = line.split(',');
-    const name = nameRaw?.trim();
-    const gender = genderRaw?.trim() || defaultGender;
-    // Check duplicates in allPlayers
-    if (name && !schedulerState.allPlayers.some(p => p.name.toLowerCase() === name.toLowerCase())) {
-      schedulerState.allPlayers.push({ name, gender, active: true });
-    }
-  });
-  schedulerState.activeplayers = schedulerState.allPlayers
-    .filter(p => p.active)
-    .map(p => p.name)
-    .reverse();
+  const textarea = document.getElementById('players-textarea');
+const text = textarea.value.trim();
+if (!text) return;
+
+const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
+const defaultGender = genderSelect ? genderSelect.value : "Male";
+
+const lines = text.split(/\r?\n/);
+let startParsing = false;
+
+lines.forEach(line => {
+  const trimmed = line.trim();
+
+  // Stop conditions
+  if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i)) {
+    startParsing = false;  // Stop adding players after this line
+    return;
+  }
+
+  // Start trigger: look for "Confirm" anywhere in the line
+  if (trimmed.match(/confirm/i)) {
+    startParsing = true;
+    return; // Don't process this line as a player
+  }
+
+  // Only parse player lines if we're in the "confirmed" section
+  if (!startParsing) return;
+
+  // Skip empty lines or obvious headers
+  if (!trimmed || trimmed.includes('Name') || trimmed.includes('Player')) return;
+
+  // Now try to extract name and optional gender
+  const [nameRaw, genderRaw] = trimmed.split(',').map(s => s?.trim());
+
+  if (!nameRaw) return; // skip invalid lines
+
+  const name = nameRaw;
+  const gender = genderRaw || defaultGender;
+
+  // Add player if not already exists (case-insensitive check)
+  const exists = schedulerState.allPlayers.some(
+    p => p.name.toLowerCase() === name.toLowerCase()
+  );
+
+  if (!exists) {
+    schedulerState.allPlayers.push({
+      name,
+      gender,
+      active: true,
+      turnOrder: 0  // optional: initialize
+    });
+  }
+});
+
+// Finally update active players list (reverse = newest first, or remove reverse if you want oldest first)
+schedulerState.activeplayers = schedulerState.allPlayers
+  .filter(p => p.active)
+  .map(p => p.name);
+// .reverse();  // ← remove if you want original order (oldest on top)
 
   updatePlayerList();
   updateFixedPairSelectors();
