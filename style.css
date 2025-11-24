@@ -14,13 +14,13 @@ header {
   padding: 0.5rem;
 }
 h1 {
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   margin: 0;
   font-weight: bold;
   letter-spacing: 0.125rem;
 }
 .container {
-  margin: 0.15rem;
+  margin: 0.1rem;
   padding: 0.5rem;
 }
 /* Card Styles */
