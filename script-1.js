@@ -40,17 +40,16 @@ function hideImportModal() {
    ADD PLAYERS FROM TEXT
 ========================= */
 function addPlayersFromText() {
-const textarea = document.getElementById('players-textarea');
-  const text = textarea.value.trim();
-  if (!text) return;
+    const textarea = document.getElementById('players-textarea');
+    const text = textarea.value.trim();
+    if (!text) return;
+    const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
+    const defaultGender = genderSelect ? genderSelect.value : "Male";
 
-  const genderSelect = document.querySelector('input[name="genderSelect"]:checked');
-  const defaultGender = genderSelect ? genderSelect.value : "Male";
+    const lines = text.split(/\r?\n/);
+    let startParsing = false;
 
-  const lines = text.split(/\r?\n/);
-  let startParsing = false;
-
-  lines.forEach(line => {
+    lines.forEach(line => {
     let trimmed = line.trim();
 
     // === STOP CONDITIONS ===
@@ -102,17 +101,6 @@ const textarea = document.getElementById('players-textarea');
     const exists = schedulerState.allPlayers.some(p => 
       p.name.toLowerCase() === normalized
     );
-
-    if (!exists) {
-      schedulerState.allPlayers.push({
-        name: name,
-        gender: gender,
-        active: true,
-        turnOrder: schedulerState.allPlayers.length // optional: maintain order
-      });
-    }
-  });
-
   if (!exists) {
     schedulerState.allPlayers.push({
       name,
