@@ -428,6 +428,11 @@ function goToRounds() {
     alert('Please add players first!');
     return;
   }
+
+  if (!numCourtsInput) {
+    alert('Please enter no of Courts!');
+    return;
+  }  
   // Auto-calculate courts based on player count ÷ 4
   let autoCourts = Math.floor(totalPlayers / 4);
   if (autoCourts < 1) autoCourts = 1;
