@@ -51,65 +51,69 @@ function addPlayersFromText() {
   let startParsing = false;
 
   lines.forEach(line => {
-    const original = line;
     let trimmed = line.trim();
+    if (!trimmed) return;
 
-    // === 1. Stop parsing after these lines ===
-    if (trimmed.match(/court\s*full/i) || trimmed.match(/late\s*cancel/i) || trimmed.match(/no more/i)) {
+    // Stop parsing at these sections
+    if (/court\s*full|late|no\s*more|wl\s*\(/i.test(trimmed)) {
       startParsing = false;
       return;
     }
 
-    // === 2. Start parsing when we see "Confirm" (case-insensitive) ===
-    if (trimmed.match(/confirm/i)) {
+    // Start parsing from the NEXT line after seeing "Confirm"
+    if (/confirm/i.test(trimmed)) {
       startParsing = true;
-      return; // don't treat "Confirmed Players" as a name
+      return;
     }
 
-    // === 3. If not in confirmed section yet → skip this line ===
-    if (!startParsing) return;
+    // If not parsing yet, skip (but allow direct name lists)
+    if (!startParsing) {
+      // Auto-start if line looks like a real name (not a header)
+      if (/^[A-Za-z\s.'\-]{2,30}$/.test(trimmed) || /^\d+\.\s*[A-Za-z]/.test(trimmed)) {
+        startParsing = true;
+      } else {
+        return;
+      }
+    }
 
-    // === 4. Skip truly empty or obvious section headers ===
-    if (!trimmed) return;
-    if (trimmed.length < 2) return;
-    if (/^(confirmed?|players?|waiting|list|name|#)/i.test(trimmed) && trimmed.length < 40) return;
+    // Clean name: only remove "Guest(Name)", "guest name", etc. → keep real name
+    let cleanName = trimmed
+      .replace(/^\d+\.\s*/, '')                    // 1. John → John
+      .replace(/^[-•*+]\s*/, '')                   // - John → John
+      .replace(/guest\s*\(?\)?\s*/gi, '')          // Guest(John), Guest John → John
+      .replace(/\(guest\)\s*/gi, '')               // John (guest) → John
+      .replace(/^\(|\)$/, '')                      // (John) → John
+      .trim();
 
-    // === 5. CLEAN THE NAME (remove junk like Guest1(John), +1 (Sarah), etc.) ===
-    let cleanName = trimmed;
+    // Final cleanup: extract only the actual name if there's junk
+    const nameMatch = cleanName.match(/^([A-Za-z\s.'\-]+)/);
+    if (!nameMatch) return;
+    cleanName = nameMatch[1].trim();
 
-    // Remove: Guest1(John), Guest2 (Sarah), +1 (Mike), 3. Emma
-    cleanName = cleanName.replace(/^(Guest\d*|guest|\+\d*|\d+)\s*[\(\[][^)\]]+[\)\]]\s*/i, '');
-    cleanName = cleanName.replace(/\s*[\(\[][^)\]]+[\)\]]\s*$/g, ''); // (guest), [VIP]
-    cleanName = cleanName.replace(/^\d+\.\s*/, '');                  // 1. John →
-    cleanName = cleanName.replace(/^\s+|\s+$/g, '');                 // trim
+    if (cleanName.length < 2 || cleanName.length > 50) return;
 
-    // If nothing left after cleaning → skip
-    if (!cleanName || cleanName.length < 2 || cleanName.length > 50) return;
-
-    // === 6. Extract name and gender (if comma exists) ===
-    let name = cleanName;
+    // Gender detection from comma: "John, F" or "Priya, female"
     let gender = defaultGender;
-
     if (cleanName.includes(',')) {
       const parts = cleanName.split(',').map(p => p.trim());
-      name = parts[0];
+      cleanName = parts[0];
       const g = parts[1];
       if (g && /^(f|female)$/i.test(g)) gender = "Female";
       else if (g && /^(m|male)$/i.test(g)) gender = "Male";
     }
 
-    // Final validation
-    if (!name || !/^[A-Za-z\s.'\-]+$/.test(name)) return;
+    // Final name validation
+    if (!/^[A-Za-z\s.'\-]+$/.test(cleanName)) return;
 
-    // === 7. Add player if not already exists (case-insensitive) ===
-    const normalized = name.toLowerCase();
-    const exists = schedulerState.allPlayers.some(p =>
+    // Add player if not already exists
+    const normalized = cleanName.toLowerCase();
+    const exists = schedulerState.allPlayers.some(p => 
       p.name.toLowerCase() === normalized
     );
 
     if (!exists) {
       schedulerState.allPlayers.push({
-        name: name,
+        name: cleanName,
         gender: gender,
         active: true,
         turnOrder: schedulerState.allPlayers.length
@@ -117,7 +121,7 @@ function addPlayersFromText() {
     }
   });
 
-  // === Update active players and UI ===
+  // Update UI
   schedulerState.activeplayers = schedulerState.allPlayers
     .filter(p => p.active)
     .map(p => p.name);
@@ -125,8 +129,6 @@ function addPlayersFromText() {
   updatePlayerList();
   updateFixedPairSelectors();
   hideImportModal();
-
-  
 }
 /* =========================
    ADD SINGLE PLAYER
