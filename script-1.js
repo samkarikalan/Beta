@@ -517,6 +517,13 @@ function prevRound() {
     showRound(currentRoundIndex);
   }
 }
+function RefreshRound() {
+    schedulerState.roundIndex = allRounds.length - 1;
+    currentRoundIndex = schedulerState.roundIndex;
+    const newRound = AischedulerNextRound(schedulerState);
+    allRounds[allRounds.length - 1] = newRound;
+    showRound(currentRoundIndex);
+}
 
 function initScheduler(numCourts) {
   schedulerState.numCourts = numCourts;  
