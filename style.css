@@ -696,6 +696,35 @@ button:disabled {
   align-items: center;
   user-select: none;
   padding: 0.625rem;
+  
+  /* 3D Button Effect */
+  box-shadow: 0 4px 0 #B08B00;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+/* Press-down animation */
+#roundTitle:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #B08B00;
+}
+
+/* Change text on hover */
+#roundTitle:hover::before {
+  content: "⟳";   /* Refresh icon */
+}
+
+#roundTitle:hover {
+  color: black;
+}
+
+/* Hide original text when hovered */
+#roundTitle:hover {
+  font-size: 0; /* hide original, but keep layout */
+}
+
+#roundTitle:hover::before {
+  font-size: 1.25rem; /* make refresh icon same size */
 }
 /* Round Status */
 .latest-round .match-card,
