@@ -690,7 +690,7 @@ button:disabled {
   border-radius: 50%;
   background-color: #FFD700;
   color: black;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -705,27 +705,15 @@ button:disabled {
 
 /* Press-down animation */
 #roundTitle:active {
-  transform: translateY(2px);
+  transform: translateY(4px);
   box-shadow: 0 2px 0 #B08B00;
-}
-
-/* Change text on hover */
-#roundTitle:hover::before {
-  content: "⟳";   /* Refresh icon */
 }
 
 #roundTitle:hover {
   color: black;
 }
 
-/* Hide original text when hovered */
-#roundTitle:hover {
-  font-size: 0; /* hide original, but keep layout */
-}
 
-#roundTitle:hover::before {
-  font-size: 1.25rem; /* make refresh icon same size */
-}
 /* Round Status */
 .latest-round .match-card,
 .latest-round .rest-btn,
